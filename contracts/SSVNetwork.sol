@@ -126,6 +126,26 @@ contract SSVNetwork is Initializable, OwnableUpgradeable, ISSVNetwork {
         emit OperatorAdded(name, msg.sender, publicKey);
     }
 
+    function batchRegisterOperator(
+        string[] calldata name,
+        address[] calldata ownerAddress,
+        bytes[] calldata publicKey,
+        uint256[] calldata fee
+    ) external {
+        require(name.length == publicKey.length && publicKey.length == fee.length && fee.length == ownerAddress.length);
+        for (uint256 index = 0; index < name.length; ++index) {
+            _ssvRegistryContract.registerOperator(
+                name[index],
+                ownerAddress[index],
+                publicKey[index],
+                fee[index]
+            );
+            _operatorDatas[publicKey[index]] = OperatorData(block.number, 0, 0, 0, block.number, block.timestamp);
+
+            emit OperatorAdded(name[index], msg.sender, publicKey[index]);
+        }
+    }
+
     /**
      * @dev See {ISSVNetwork-deleteOperator}.
      */
@@ -209,6 +229,42 @@ contract SSVNetwork is Initializable, OwnableUpgradeable, ISSVNetwork {
         require(!_liquidatable(msg.sender), "not enough balance");
 
         emit ValidatorAdded(msg.sender, publicKey, operatorPublicKeys, sharesPublicKeys, encryptedKeys);
+    }
+
+    function batchRegisterValidator(
+        address ownerAddress,
+        bytes calldata publicKey,
+        bytes[] calldata operatorPublicKeys,
+        bytes[] calldata sharesPublicKeys,
+        bytes[] calldata encryptedKeys,
+        uint256 tokenAmount
+    ) external {
+        _updateNetworkEarnings();
+
+        _ssvRegistryContract.registerValidator(
+            ownerAddress,
+            publicKey,
+            operatorPublicKeys,
+            sharesPublicKeys,
+            encryptedKeys
+        );
+        _updateAddressNetworkFee(ownerAddress);
+        ++_owners[ownerAddress].activeValidatorsCount;
+
+        for (uint256 index = 0; index < operatorPublicKeys.length; ++index) {
+            bytes calldata operatorPublicKey = operatorPublicKeys[index];
+            _updateOperatorBalance(operatorPublicKey);
+            ++_operatorDatas[operatorPublicKey].validatorCount;
+            _useOperatorByOwner(ownerAddress, operatorPublicKey);
+        }
+
+        if (tokenAmount > 0) {
+            _deposit(tokenAmount);
+        }
+
+        require(!_liquidatable(ownerAddress), "not enough balance");
+
+        emit ValidatorAdded(ownerAddress, publicKey, operatorPublicKeys, sharesPublicKeys, encryptedKeys);
     }
 
     /**
