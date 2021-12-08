@@ -5,6 +5,44 @@
       {
         "indexed": false,
         "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "ownerAddress",
+        "type": "address"
+      }
+    ],
+    "name": "FundsDeposited",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "ownerAddress",
+        "type": "address"
+      }
+    ],
+    "name": "FundsWithdrawn",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
         "name": "oldFee",
         "type": "uint256"
       },
@@ -16,6 +54,25 @@
       }
     ],
     "name": "NetworkFeeUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      }
+    ],
+    "name": "NetworkFeesWithdrawn",
     "type": "event"
   },
   {
@@ -78,6 +135,25 @@
         "type": "bytes"
       }
     ],
+    "name": "OperatorDeactivated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "ownerAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "publicKey",
+        "type": "bytes"
+      }
+    ],
     "name": "OperatorDeleted",
     "type": "event"
   },
@@ -110,25 +186,6 @@
       }
     ],
     "name": "OperatorFeeUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "ownerAddress",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "publicKey",
-        "type": "bytes"
-      }
-    ],
-    "name": "OperatorInactivated",
     "type": "event"
   },
   {
@@ -253,7 +310,7 @@
         "type": "bytes"
       }
     ],
-    "name": "ValidatorDeleted",
+    "name": "ValidatorDeactivated",
     "type": "event"
   },
   {
@@ -272,7 +329,7 @@
         "type": "bytes"
       }
     ],
-    "name": "ValidatorInactivated",
+    "name": "ValidatorDeleted",
     "type": "event"
   },
   {
@@ -365,72 +422,6 @@
   {
     "inputs": [
       {
-        "internalType": "string[]",
-        "name": "name",
-        "type": "string[]"
-      },
-      {
-        "internalType": "address[]",
-        "name": "ownerAddress",
-        "type": "address[]"
-      },
-      {
-        "internalType": "bytes[]",
-        "name": "publicKey",
-        "type": "bytes[]"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "fee",
-        "type": "uint256[]"
-      }
-    ],
-    "name": "batchRegisterOperator",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "ownerAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes",
-        "name": "publicKey",
-        "type": "bytes"
-      },
-      {
-        "internalType": "bytes[]",
-        "name": "operatorPublicKeys",
-        "type": "bytes[]"
-      },
-      {
-        "internalType": "bytes[]",
-        "name": "sharesPublicKeys",
-        "type": "bytes[]"
-      },
-      {
-        "internalType": "bytes[]",
-        "name": "encryptedKeys",
-        "type": "bytes[]"
-      },
-      {
-        "internalType": "uint256",
-        "name": "tokenAmount",
-        "type": "uint256"
-      }
-    ],
-    "name": "batchRegisterValidator",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "ownerAddress",
         "type": "address"
@@ -508,6 +499,19 @@
       }
     ],
     "name": "deposit",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "enableAccount",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -627,6 +631,25 @@
     "name": "initialize",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "ownerAddress",
+        "type": "address"
+      }
+    ],
+    "name": "isOwnerValidatorsDisabled",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -1039,6 +1062,13 @@
       }
     ],
     "name": "withdraw",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "withdrawAll",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

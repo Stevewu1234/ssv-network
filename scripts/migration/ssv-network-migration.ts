@@ -33,7 +33,6 @@ async function main() {
     fromBlock: 0,
     toBlock: latestBlock
   };
-  /*
   console.log(`fetching operators...`, filters);
   const operatorEvents = await oldContract.getPastEvents('OperatorAdded', filters);
   console.log("total operatorEvents", operatorEvents);
@@ -74,12 +73,11 @@ async function main() {
       console.log('------', params[0], e.message);
     }
   }
-  */
+  return;
   console.log(`fetching validators...`, filters);
-  const validatorEvents = await newContract.getPastEvents('Operator Added', filters);
+  const validatorEvents = await newContract.getPastEvents('ValidatorAdded', filters);
   console.log("total validatorEvents", validatorEvents.length);
   console.log(validatorEvents[0])
-  return;
   for (let index = 0; index < validatorEvents.length; index++) {
     const { returnValues } = validatorEvents[index];
     const oess = returnValues.oessList.reduce((res, value) => {
