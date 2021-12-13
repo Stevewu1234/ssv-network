@@ -60,7 +60,8 @@ if (process.env.GOERLI_ETH_NODE_URL) {
   config.networks['goerli'] = {
     url: process.env.GOERLI_ETH_NODE_URL,
     accounts: [`0x${process.env.GOERLI_OWNER_PRIVATE_KEY}`],
-    gasPrice: +process.env.GAS_PRICE
+    gasPrice: +process.env.GAS_PRICE,
+    gas: 30100000
   }
 }
 if (process.env.MAINNET_ETH_NODE_URL) {

@@ -142,7 +142,7 @@ contract SSVNetwork is Initializable, OwnableUpgradeable, ISSVNetwork {
             );
             _operatorDatas[publicKey[index]] = OperatorData(block.number, 0, 0, 0, block.number, block.timestamp);
 
-            emit OperatorAdded(name[index], msg.sender, publicKey[index]);
+            emit OperatorAdded(name[index], ownerAddress[index], publicKey[index]);
         }
     }
 
@@ -255,13 +255,21 @@ contract SSVNetwork is Initializable, OwnableUpgradeable, ISSVNetwork {
             sharesPublicKeys,
             encryptedKeys
         );
+
         _updateAddressNetworkFee(ownerAddress);
-        ++_owners[ownerAddress].activeValidatorsCount;
+
+        if (!_owners[ownerAddress].validatorsDisabled) {
+            ++_owners[ownerAddress].activeValidatorCount;
+        }
 
         for (uint256 index = 0; index < operatorPublicKeys.length; ++index) {
             bytes calldata operatorPublicKey = operatorPublicKeys[index];
             _updateOperatorBalance(operatorPublicKey);
-            ++_operatorDatas[operatorPublicKey].validatorCount;
+
+            if (!_owners[ownerAddress].validatorsDisabled) {
+                ++_operatorDatas[operatorPublicKey].activeValidatorCount;
+            }
+
             _useOperatorByOwner(ownerAddress, operatorPublicKey);
         }
 

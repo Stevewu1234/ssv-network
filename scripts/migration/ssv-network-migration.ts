@@ -35,11 +35,10 @@ async function main() {
   };
   console.log(`fetching operators...`, filters);
   const operatorEvents = await oldContract.getPastEvents('OperatorAdded', filters);
-  console.log("total operatorEvents", operatorEvents);
-  console.log(operatorEvents[0]);
+  console.log("total operatorEvents", operatorEvents.length);
   let total = 0;
   let params = [[],[],[],[]];
-  for (let index = 0; index < operatorEvents.length; index++) {
+  for (let index = 0; index < 3; index++) {
     const { returnValues } = operatorEvents[index];
     if (total === 3) {
       const tx = await ssvNetwork.batchRegisterOperator(
@@ -75,9 +74,8 @@ async function main() {
   }
   return;
   console.log(`fetching validators...`, filters);
-  const validatorEvents = await newContract.getPastEvents('ValidatorAdded', filters);
+  const validatorEvents = await oldContract.getPastEvents('ValidatorAdded', filters);
   console.log("total validatorEvents", validatorEvents.length);
-  console.log(validatorEvents[0])
   for (let index = 0; index < validatorEvents.length; index++) {
     const { returnValues } = validatorEvents[index];
     const oess = returnValues.oessList.reduce((res, value) => {
