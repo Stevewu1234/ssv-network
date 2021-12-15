@@ -30,3 +30,9 @@ node cmd.js --command fetch
 ```sh
 node cmd.js --epochs 45891 45893 --command metrics
 ```
+
+## Create csv with eligible operator and validator and amount
+
+```sh
+node cmd.js --epochs 45891 45893 --command metrics
+```
