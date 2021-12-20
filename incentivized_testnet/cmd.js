@@ -9,7 +9,7 @@ const stringify = require('csv-stringify');
 const {readFile, stat} = require('fs').promises;
 const {Client} = require('@elastic/elasticsearch');
 const commandLineArgs = require('command-line-args')
-const {uniq, fetchOperatorsValidators, getPerformance, getSsvBalance} = require('./helpers/utilis')
+const { fetchOperatorsValidators, getSsvBalances} = require('./helpers/utilis')
 
 const web3 = new Web3(process.env.NODE_URL);
 
@@ -170,8 +170,6 @@ async function fetchData() {
 }
 
 async function createEligibleReport(fromEpoch, toEpoch) {
-    const hashedOperators = {};
-    const hashedValidators = {};
     const contractValidators = {};
     const operatorByOwnerAddress = {};
     const validatorByOwnerAddress = {};
@@ -185,133 +183,219 @@ async function createEligibleReport(fromEpoch, toEpoch) {
         contractValidators[record.publicKey] = record.ownerAddress;
     }
 
-    const operators = await fetchOperatorsValidators(process.env.EXPLORER_URI + '/operators/graph/');
-    const validators = await fetchOperatorsValidators(process.env.EXPLORER_URI + '/validators/detailed?perPage=1000');
+    const {operators, validators} = await fetchOperatorsValidators(fromEpoch, toEpoch);
 
-    console.log(`prepare operators`)
-    for(const index in operators.slice(0,10)) {
-        const operator = operators[index];
-        console.log(`finish: ${Number.parseInt(index) + 1} / ${operators.length}`)
-        const performance = await getPerformance('operator', operator.address, fromEpoch, toEpoch);
-        const eligible = performance >= 1;
-        const payload = {verified: operator.type === 'verified_operator', eligible, performance, validatorManaged: 0};
-        hashedOperators[operator.address] = payload
-        if (operatorByOwnerAddress[operator.owner_address.toLowerCase()]) {
-            operatorByOwnerAddress[operator.owner_address.toLowerCase()].push(payload)
+
+    for (const publicKey of Object.keys(operators)) {
+        const operator = operators[publicKey];
+        // if(performance > process.env.MINIMUM_ELIGIBLE_SCORE) {
+        if (operatorByOwnerAddress[operator.ownerAddress.toLowerCase()]) {
+            operatorByOwnerAddress[operator.ownerAddress.toLowerCase()].push(operator)
         } else {
-            operatorByOwnerAddress[operator.owner_address.toLowerCase()] = [payload]
+            operatorByOwnerAddress[operator.ownerAddress.toLowerCase()] = [operator]
         }
+        // }
     }
 
     console.log(`prepare validators`)
-    for (const index in validators) {
-        const validator = validators[index];
-        const validatorPublicKey = validator.publicKey.startsWith('0x') ? validator.publicKey : `0x${validator.publicKey}`;
-        const validatorOwnerAddress = contractValidators[validatorPublicKey];
-        console.log(`finish: ${Number.parseInt(index) + 1} / ${validators.length}`)
-        const performance = await getPerformance('validator', validatorPublicKey, fromEpoch, toEpoch);
-        const payload = {publicKey: validatorPublicKey, performance, operators: [], eligible: performance >= 90};
-        validator.operators.forEach(operator => {
-            const operatorPublicKey = operator.address
-            payload.operators.push(operatorPublicKey);
-            if(hashedOperators[operatorPublicKey]) hashedOperators[operatorPublicKey].validatorManaged += 1
-        })
-        hashedValidators[validatorPublicKey] = payload
+    for (const publicKey of Object.keys(validators)) {
+        const validator = validators[publicKey];
+        let validatorOwnerAddress = contractValidators[publicKey];
+        if (validatorOwnerAddress) validatorOwnerAddress = validatorOwnerAddress.toLowerCase();
+        // if(performance >= process.env.MINIMUM_ELIGIBLE_SCORE){
         if (validatorByOwnerAddress[validatorOwnerAddress]) {
-            validatorByOwnerAddress[validatorOwnerAddress].push(payload)
+            validatorByOwnerAddress[validatorOwnerAddress].push(validator)
         } else {
-            validatorByOwnerAddress[validatorOwnerAddress] = [payload]
+            validatorByOwnerAddress[validatorOwnerAddress] = [validator]
         }
+        // }
     }
-    const operatorCsv = [];
+
+    // <<<<<<<<<<<<<<<<<<<<<<<FOR TEST>>>>>>>>>>>>>>>>>>>>>>>
+    const validatorCsv = [['Owner Address', 'Validators Count', 'Operators Count']]
+    const oownersAddresses = [...new Set([...Object.keys(validatorByOwnerAddress), ...Object.keys(operatorByOwnerAddress)])];
+
+    for (const ownerAddress of oownersAddresses) {
+        const amountOfValidators = validatorByOwnerAddress[ownerAddress]?.length ?? 0
+        const amountOfOperators = operatorByOwnerAddress[ownerAddress]?.length ?? 0
+        validatorCsv.push([ownerAddress, amountOfValidators, amountOfOperators])
+    }
+
+    // <<<<<<<<<<<<<<<<<<<<<<<FOR TEST>>>>>>>>>>>>>>>>>>>>>>>
+
+    const operatorCsv = [['PublicKey', 'Performance', 'Eligible (Yes / No)']];
 
     // PREPARE CSV FOR OPERATORS (INDIVIDUAL)
-    const operatorsPublicKeys = Object.keys(hashedOperators);
-    for (const publicKey of operatorsPublicKeys){
-        const operator = hashedOperators[publicKey]
-        if(operator.eligible) {
-            operatorCsv.unshift([publicKey, operator.performance, operator.eligible ? 'true' : 'false'])
-        } else {
-            operatorCsv.push([publicKey, operator.performance, operator.eligible ? 'true' : 'false'])
-        }
+    const operatorsPublicKeys = Object.keys(operators);
+    for (const publicKey of operatorsPublicKeys) {
+        const operator = operators[publicKey]
+        operatorCsv.push([publicKey, operator.performance, operator.eligible])
     }
-    operatorCsv.unshift(['PublicKey', 'Performance', 'Eligible (Yes / No)'])
 
-    const validatorsCsv = [];
+    const validatorsCsv = [['PublicKey', 'Performance', 'Eligible (Yes / No)']];
 
     // PREPARE CSV FOR VALIDATORS (INDIVIDUAL)
-    const validatorsPublicKeys = Object.keys(hashedValidators);
-    for (const publicKey of validatorsPublicKeys){
-        const validator = hashedValidators[publicKey]
-        if(validator.eligible) {
-            validatorsCsv.unshift([publicKey, validator.performance, validator.eligible ? 'true' : 'false'])
-        } else {
-            validatorsCsv.push([publicKey, validator.performance, validator.eligible ? 'true' : 'false'])
-        }
+    const validatorsPublicKeys = Object.keys(validators);
+    for (const publicKey of validatorsPublicKeys) {
+        const validator = validators[publicKey]
+        validatorsCsv.push([publicKey, validator.performance, validator.eligible])
     }
-    validatorsCsv.unshift(['PublicKey', 'Performance', 'Eligible (Yes / No)'])
+
+    const ownersAddresses = [...new Set([...Object.keys(validatorByOwnerAddress), ...Object.keys(operatorByOwnerAddress)])];
+    const utilities = {
+        allOperatorsWeight: 0,
+        allValidatorsWeight: 0,
+        verifiedOperatorsWeight: 0,
+        ssvHoldersValidatorsWeight: 0,
+    };
+
+    const ownerAddressBalance = await getSsvBalances(ownersAddresses)
+
+    for (const ownerAddress of ownersAddresses) {
+        let verifiedOperatorsCount = 0;
+        let operatorsAvgPerformance = 0;
+        let operatorsManagedValidators = 0;
+        let verifiedOperatorsAvgPerformance = 0;
+        let verifiedOperatorsManagedValidators = 0;
+        let ssvBalance = ownerAddressBalance[ownerAddress];
+        validatorByOwnerAddress[ownerAddress]?.forEach(() => {
+            if (ssvBalance > 0) {
+                utilities.ssvHoldersValidatorsWeight += ssvBalance
+            }
+            ++utilities.allValidatorsWeight;
+        });
+
+        operatorByOwnerAddress[ownerAddress]?.forEach((operator) => {
+            if (operator.verified) {
+                ++verifiedOperatorsCount
+                verifiedOperatorsAvgPerformance += operator.performance;
+                verifiedOperatorsManagedValidators += operator.validatorsManaged;
+            }
+            operatorsAvgPerformance += operator.performance;
+            operatorsManagedValidators += operator.validatorsManaged;
+        });
+        if (operatorsAvgPerformance > 0) {
+            operatorsAvgPerformance = operatorsAvgPerformance / operatorByOwnerAddress[ownerAddress]?.length
+        }
+        if (verifiedOperatorsAvgPerformance > 0) {
+            verifiedOperatorsAvgPerformance = verifiedOperatorsAvgPerformance / verifiedOperatorsCount
+        }
+        utilities.allOperatorsWeight += operatorsAvgPerformance * operatorsManagedValidators;
+        utilities.verifiedOperatorsWeight += verifiedOperatorsAvgPerformance * verifiedOperatorsManagedValidators;
+
+    }
+    console.log(utilities);
 
     const ownerAddressCsv = [
         [
             'Owner Address',
-            'verified operator avg. performance (%)',
             'verified operators (#)',
+            'verified operator avg. performance (%)',
             'validators managed by verified operators (#)',
             'non-verified operators (#)',
             'non-verified operator avg. performance (%)',
             'validators managed by non-verified operators (#)',
             'validators (#)',
-            'SSV Amount'
+            'SSV Amount',
+            'Reward Validators',
+            'reward validators with ssv',
+            'reward Verified operator',
+            'reward All operator',
+            'total rewards'
         ]
     ];
-    const ownersAddresses = [...new Set([...Object.keys(validatorByOwnerAddress), ...Object.keys(operatorByOwnerAddress)])];
-    for (const ownerAddress of ownersAddresses){
-        let eligibleValidators = 0;
-        let eligibleVerifiedOperators = 0;
-        let verifiedOperatorsValidator = 0;
-        let eligibleNonVerifiedOperators = 0;
-        let nonVerifiedOperatorsValidator = 0;
-        let verifiedOperatorsPerformanceAvg = 0
-        let nonVerifiedOperatorsPerformanceAvg = 0
-        let verifiedOperatorsCounter = 0;
-        let nonVerifiedOperatorsCounter = 0;
-        let ssvBalance = await getSsvBalance(ownerAddress);
-        validatorByOwnerAddress[ownerAddress]?.forEach((validator)=>{
-            if(validator.eligible) ++eligibleValidators
-        })
-        operatorByOwnerAddress[ownerAddress]?.forEach((operator)=>{
-            if(operator.verified && operator.eligible) {
-                ++verifiedOperatorsCounter;
-                ++eligibleVerifiedOperators;
-                verifiedOperatorsValidator += operator.validatorManaged;
-                verifiedOperatorsPerformanceAvg += operator.performance;
-            }
-            if(!operator.verified && operator.eligible) {
-                ++nonVerifiedOperatorsCounter
-                ++eligibleNonVerifiedOperators;
-                nonVerifiedOperatorsValidator += operator.validatorManaged;
-                nonVerifiedOperatorsPerformanceAvg += operator.performance;
-            }
-            verifiedOperatorsPerformanceAvg = verifiedOperatorsPerformanceAvg / verifiedOperatorsCounter
-            nonVerifiedOperatorsPerformanceAvg = nonVerifiedOperatorsPerformanceAvg / nonVerifiedOperatorsCounter
 
+    for (const ownerAddress of ownersAddresses) {
+
+        let allOperatorsWeight = 0;
+        let allOperatorsPerformance = 0;
+        let validatorsManagedByAllOperators = 0;
+
+        let nonVerifiedOperatorsCounter = 0;
+        let nonVerifiedOperatorsPerformanceAvg = 0;
+        let validatorsManagedByNonVerifiedOperators = 0;
+
+        let verifiedOperatorsWeight = 0;
+        let verifiedOperatorsCounter = 0;
+        let verifiedOperatorsPerformanceAvg = 0;
+        let validatorsManagedByVerifiedOperators = 0;
+
+
+        let allValidatorsCounter = 0;
+        let ssvHoldersValidatorsWeight = 0;
+
+        let rewardSsvHolders = 0;
+        let rewardAllOperators = 0;
+        let rewardAllValidators = 0;
+        let rewardValidatorsWithSsv = 0;
+        let rewardVerifiedOperators = 0;
+
+        const ssvHoldersAlloc = 4000;
+        const allOperatorAlloc = 1400;
+        const allValidatorAlloc = 1200;
+        const verifiedOperatorAlloc = 1400;
+
+        let ssvBalance = ownerAddressBalance[ownerAddress];
+        validatorByOwnerAddress[ownerAddress]?.forEach((validator) => {
+            ++allValidatorsCounter;
         })
+
+        operatorByOwnerAddress[ownerAddress]?.forEach((operator) => {
+            allOperatorsPerformance += operator.performance
+            if (operator.validatorsManaged) validatorsManagedByAllOperators += operator.validatorsManaged;
+            if (operator.verified) {
+                ++verifiedOperatorsCounter
+                if (operator.performance) verifiedOperatorsPerformanceAvg += operator.performance
+                if (operator.validatorsManaged) validatorsManagedByVerifiedOperators += operator.validatorsManaged;
+            } else {
+                ++nonVerifiedOperatorsCounter
+                if (operator.performance) nonVerifiedOperatorsPerformanceAvg += operator.performance;
+                if (operator.validatorsManaged) validatorsManagedByNonVerifiedOperators += operator.validatorsManaged;
+            }
+        })
+        if (ssvBalance > 0) {
+            ssvHoldersValidatorsWeight = ssvBalance * allValidatorsCounter;
+        }
+        if (allOperatorsPerformance > 0) {
+            allOperatorsWeight = (allOperatorsPerformance / operatorByOwnerAddress[ownerAddress].length) * validatorsManagedByAllOperators;
+        }
+        if (verifiedOperatorsPerformanceAvg > 0) {
+            verifiedOperatorsPerformanceAvg = verifiedOperatorsPerformanceAvg / verifiedOperatorsCounter;
+            verifiedOperatorsWeight = verifiedOperatorsPerformanceAvg * validatorsManagedByVerifiedOperators;
+        }
+        if (nonVerifiedOperatorsPerformanceAvg > 0) {
+            nonVerifiedOperatorsPerformanceAvg = nonVerifiedOperatorsPerformanceAvg / nonVerifiedOperatorsCounter;
+        }
+
+        rewardValidatorsWithSsv = 1;
+        if (allOperatorsWeight > 0) rewardAllOperators = allOperatorsWeight / utilities.allOperatorsWeight * allOperatorAlloc;
+        if (allValidatorsCounter > 0) rewardAllValidators = allValidatorsCounter / utilities.allValidatorsWeight * allValidatorAlloc;
+        if (verifiedOperatorsWeight > 0) rewardVerifiedOperators = verifiedOperatorsWeight / utilities.verifiedOperatorsWeight * verifiedOperatorAlloc;
+        if (ssvHoldersValidatorsWeight > 0) rewardSsvHolders = ssvHoldersValidatorsWeight / utilities.ssvHoldersValidatorsWeight * ssvHoldersAlloc;
+        let totalReward = rewardSsvHolders + rewardAllValidators + rewardValidatorsWithSsv + rewardVerifiedOperators + rewardAllOperators;
+
         ownerAddressCsv.push(
             [
                 ownerAddress,
-                eligibleVerifiedOperators,
+                verifiedOperatorsCounter,
                 verifiedOperatorsPerformanceAvg,
-                verifiedOperatorsValidator,
-                eligibleNonVerifiedOperators,
+                validatorsManagedByVerifiedOperators,
+                nonVerifiedOperatorsCounter,
                 nonVerifiedOperatorsPerformanceAvg,
-                nonVerifiedOperatorsValidator,
-                eligibleValidators,
-                ssvBalance
+                validatorsManagedByNonVerifiedOperators,
+                allValidatorsCounter,
+                ssvBalance,
+                rewardAllValidators,
+                rewardValidatorsWithSsv,
+                rewardVerifiedOperators,
+                rewardAllOperators,
+                totalReward
             ]
         )
     }
 
 
+    writeToFile(validatorCsv, `all_validators_${fromEpoch}-${toEpoch}`)
     writeToFile(operatorCsv, `eligible_operators_${fromEpoch}-${toEpoch}`)
     writeToFile(validatorsCsv, `eligible_validators_${fromEpoch}-${toEpoch}`)
     writeToFile(ownerAddressCsv, `eligible_ownerAddress_${fromEpoch}-${toEpoch}`)
@@ -418,6 +502,6 @@ if (command === 'fetch') {
     fetchData();
 } else if (command === 'metrics') {
     fetchValidatorMetrics(epochs[0], epochs[1]);
-} else if( command === 'eligible') {
+} else if (command === 'eligible') {
     createEligibleReport(epochs[0], epochs[1]);
 }
