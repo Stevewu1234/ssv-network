@@ -12,7 +12,7 @@ async function fetchOperators(fromEpoch, toEpoch) {
         got.get(process.env.EXPLORER_URI + '/operators/graph/').then(async (response) => {
             let counter = 1;
             const data = JSON.parse(response.body)
-            const operators = data.operators.slice(0,10);
+            const operators = data.operators.slice(0,100);
             const operatorsCount = operators.length;
             const batches = new Array(Math.ceil(operators.length / process.env.RATE_LIMIT)).fill().map(_ => operators.splice(0, process.env.RATE_LIMIT))
             for (const batch of batches) {
@@ -41,19 +41,40 @@ async function fetchOperators(fromEpoch, toEpoch) {
     });
 }
 
+async function getValidators() {
+    return new Promise(resolve => {
+        got.get(process.env.EXPLORER_URI + '/validators/detailed?perPage=500&page=1').then(async (response) => {
+            const data = JSON.parse(response.body)
+            const numOfPages = data.pagination.pages;
+            console.log(numOfPages);
+            const validators = await Promise.all(Array(numOfPages - 1).fill(null).map((_, i) => getValidatorsRequest(i + 2)));
+            resolve(validators.flat());
+        });
+    })
+}
+
+async function getValidatorsRequest(page) {
+    return new Promise(resolve => {
+        got.get(process.env.EXPLORER_URI + `/validators/detailed?perPage=500&page=${page}`).then(async (response) => {
+            const data = JSON.parse(response.body)
+            resolve(data.validators);
+        });
+    })
+}
+
 async function fetchValidators(fromEpoch, toEpoch) {
     return new Promise(resolve => {
-        got.get(process.env.EXPLORER_URI + '/validators/detailed?perPage=1000').then(async (response) => {
+        getValidators().then(async (validators) => {
+            validators = validators.slice(0,100);
             let counter = 1;
-            const data = JSON.parse(response.body)
-            const validators = data.validators.slice(0,10);
+            const validatorsLength = validators.length;
             const batches = new Array(Math.ceil(validators.length / process.env.RATE_LIMIT)).fill().map(_ => validators.splice(0, process.env.RATE_LIMIT))
             for (const batch of batches) {
                 const performances = await Promise.all(batch.map(cell => {
                     return new Promise((resolveValidators) => {
                         const validatorPublicKey = cell.publicKey.startsWith('0x') ? cell.publicKey : `0x${cell.publicKey}`;
                         getPerformance('validator', cell.publicKey, fromEpoch, toEpoch).then((performance) => {
-                            console.log('prepare Validator: ' + counter + ' / ' + validators.length)
+                            console.log('prepare Validator: ' + counter + ' / ' + validatorsLength)
                             cell.operators.forEach(operator => {
                                 if (hashedOperators[operator.address]) hashedOperators[operator.address].validatorsManaged += 1
                             })
@@ -82,6 +103,7 @@ async function fetchOperatorsValidators(fromEpoch, toEpoch) {
         })
     }))
 }
+
 async function getSsvBalances(ownersAddresses) {
     const hashedOwnersAddresses = {};
     const newOwnersAddresses = ownersAddresses.slice();
@@ -144,18 +166,19 @@ async function getSsvBalance(ownerAddress) {
             } else {
                 resolve(0)
             }
-        }).catch((e)=>{
+        }).catch((e) => {
             console.log(e);
             console.log('<<<<<<<<<<<<<<<here>>>>>>>>>>>>>>>')
-            setTimeout(()=>{
+            setTimeout(() => {
                 resolve(getSsvBalance(ownerAddress));
-            },10000)
+            }, 10000)
         })
     })
 }
 
 async function getPerformance(type, publicKey, fromEpoch, toEpoch) {
     return new Promise(resolve => {
+        console.log('<<<<<<<<<<<<get performance>>>>>>>>>>>>');
         got.get(`${process.env.EXPLORER_URI}/${type + 's'}/incentivized/?${type}=${publicKey}&network=prater&epochs=${fromEpoch}-${toEpoch}`).then((response) => {
             const performance = JSON.parse(response.body)
             if (performance.rounds.length === 0) {
@@ -171,6 +194,7 @@ async function getPerformance(type, publicKey, fromEpoch, toEpoch) {
 
 module.exports = {
     uniq,
+    getValidators,
     getPerformance,
     getSsvBalances,
     fetchOperatorsValidators
