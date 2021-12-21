@@ -167,8 +167,8 @@ async function getSsvBalance(ownerAddress) {
                 resolve(0)
             }
         }).catch((e) => {
-            console.log(e);
-            console.log('<<<<<<<<<<<<<<<here>>>>>>>>>>>>>>>')
+            console.log(`Error with ${ownerAddress}`)
+            console.log(`calculate again...`)
             setTimeout(() => {
                 resolve(getSsvBalance(ownerAddress));
             }, 10000)
@@ -178,7 +178,6 @@ async function getSsvBalance(ownerAddress) {
 
 async function getPerformance(type, publicKey, fromEpoch, toEpoch) {
     return new Promise(resolve => {
-        console.log('<<<<<<<<<<<<get performance>>>>>>>>>>>>');
         got.get(`${process.env.EXPLORER_URI}/${type + 's'}/incentivized/?${type}=${publicKey}&network=prater&epochs=${fromEpoch}-${toEpoch}`).then((response) => {
             const performance = JSON.parse(response.body)
             if (performance.rounds.length === 0) {
