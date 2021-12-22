@@ -12,7 +12,7 @@ async function fetchOperators(fromEpoch, toEpoch) {
         got.get(process.env.EXPLORER_URI + '/operators/graph/').then(async (response) => {
             let counter = 1;
             const data = JSON.parse(response.body)
-            const operators = data.operators.slice(0,100);
+            const operators = data.operators;
             const operatorsCount = operators.length;
             const batches = new Array(Math.ceil(operators.length / process.env.RATE_LIMIT)).fill().map(_ => operators.splice(0, process.env.RATE_LIMIT))
             for (const batch of batches) {
@@ -37,6 +37,8 @@ async function fetchOperators(fromEpoch, toEpoch) {
                 performances.forEach(operator => hashedOperators[operator.publicKey] = operator)
             }
             resolve()
+        }).catch(()=>{
+            resolve(fetchOperators(fromEpoch, toEpoch));
         })
     });
 }
@@ -46,9 +48,10 @@ async function getValidators() {
         got.get(process.env.EXPLORER_URI + '/validators/detailed?perPage=500&page=1').then(async (response) => {
             const data = JSON.parse(response.body)
             const numOfPages = data.pagination.pages;
-            console.log(numOfPages);
-            const validators = await Promise.all(Array(numOfPages - 1).fill(null).map((_, i) => getValidatorsRequest(i + 2)));
-            resolve(validators.flat());
+            const validators = await Promise.all(Array(numOfPages).fill(null).map((_, i) => getValidatorsRequest(i + 2)));
+            resolve([...validators.flat(),...data.validators]);
+        }).catch(()=>{
+            resolve(getValidators());
         });
     })
 }
@@ -65,7 +68,7 @@ async function getValidatorsRequest(page) {
 async function fetchValidators(fromEpoch, toEpoch) {
     return new Promise(resolve => {
         getValidators().then(async (validators) => {
-            validators = validators.slice(0,100);
+            // validators = validators.slice(0,100);
             let counter = 1;
             const validatorsLength = validators.length;
             const batches = new Array(Math.ceil(validators.length / process.env.RATE_LIMIT)).fill().map(_ => validators.splice(0, process.env.RATE_LIMIT))
@@ -111,6 +114,7 @@ async function getSsvBalances(ownersAddresses) {
         const batches = new Array(Math.ceil(newOwnersAddresses.length / 1)).fill().map(_ => newOwnersAddresses.splice(0, 1))
         for (const batch of batches) {
             await Promise.all(batch.map(cell => {
+                console.log(`get balance for: ${cell}`)
                 return new Promise((resolveBalance) => {
                     getSsvBalance(cell).then((balance) => {
                         hashedOwnersAddresses[cell] = balance;
@@ -171,7 +175,7 @@ async function getSsvBalance(ownerAddress) {
             console.log(`calculate again...`)
             setTimeout(() => {
                 resolve(getSsvBalance(ownerAddress));
-            }, 10000)
+            }, 1000)
         })
     })
 }

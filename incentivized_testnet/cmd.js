@@ -186,17 +186,16 @@ async function createEligibleReport(fromEpoch, toEpoch) {
 
     const {operators, validators} = await fetchOperatorsValidators(fromEpoch, toEpoch);
 
-
     console.log(`Division of operators to ownerAddress`)
     for (const publicKey of Object.keys(operators)) {
         const operator = operators[publicKey];
-        if (operator.performance >= process.env.MINIMUM_ELIGIBLE_SCORE) {
+        // if (operator.performance >= process.env.MINIMUM_ELIGIBLE_SCORE) {
             if (operatorByOwnerAddress[operator.ownerAddress.toLowerCase()]) {
                 operatorByOwnerAddress[operator.ownerAddress.toLowerCase()].push(operator)
             } else {
                 operatorByOwnerAddress[operator.ownerAddress.toLowerCase()] = [operator]
             }
-        }
+        // }
     }
 
     console.log(`Division of validators to ownerAddress`)
@@ -204,13 +203,13 @@ async function createEligibleReport(fromEpoch, toEpoch) {
         const validator = validators[publicKey];
         let validatorOwnerAddress = contractValidators[publicKey];
         if (validatorOwnerAddress) validatorOwnerAddress = validatorOwnerAddress.toLowerCase();
-        if (validator.performance >= process.env.MINIMUM_ELIGIBLE_SCORE) {
+        // if (validator.performance >= process.env.MINIMUM_ELIGIBLE_SCORE) {
             if (validatorByOwnerAddress[validatorOwnerAddress]) {
                 validatorByOwnerAddress[validatorOwnerAddress].push(validator)
             } else {
                 validatorByOwnerAddress[validatorOwnerAddress] = [validator]
             }
-        }
+        // }
     }
 
     // PREPARE CSV FOR OWNER ADDRESS INCENTIVES
@@ -317,8 +316,8 @@ async function createEligibleReport(fromEpoch, toEpoch) {
         })
         if (verifiedOperatorsPerformance > 0) verifiedOperatorsPerformance = verifiedOperatorsPerformance / verifiedOperators;
         if (allOperatorsPerformance > 0) allOperatorsPerformance = allOperatorsPerformance / allOperators;
-        let verifiedWeight = (verifiedOperatorsPerformance * verifiedOperatorsValidators);
-        let allOperatorsWeight = (verifiedOperatorsPerformance * allOperatorsValidators);
+        let verifiedWeight = verifiedOperatorsPerformance * verifiedOperatorsValidators;
+        let allOperatorsWeight = allOperatorsPerformance * allOperatorsValidators;
         if (verifiedWeight > 0) verifiedOperatorsReward = verifiedWeight / utilities.verifiedOperatorsWeight * verifiedOperatorAlloc;
         if (allOperatorsWeight > 0) allOperatorsReward = allOperatorsWeight / utilities.allOperatorsWeight * allOperatorAlloc;
         let total = verifiedOperatorsReward + allOperatorsReward
@@ -425,8 +424,21 @@ async function createEligibleReport(fromEpoch, toEpoch) {
         )
     }
 
+    const headers = [['Owner Address', 'validators (#)', 'operators (#)']]
+    for (const ownerAddress of ownersAddresses) {
+        let validators = 0;
+        let operators = 0;
+        validatorByOwnerAddress[ownerAddress]?.forEach((validator) => {
+            ++validators;
+        })
 
-    // writeToFile(validatorCsv, `all_validators_${fromEpoch}-${toEpoch}`)
+        operatorByOwnerAddress[ownerAddress]?.forEach((operator) => {
+            ++operators
+        })
+        headers.push([ownerAddress, validators, operators]);
+    }
+
+    writeToFile(headers, `ownerAddress_distribution_${fromEpoch}-${toEpoch}`)
     writeToFile(operatorsCsv, `eligible_operators_${fromEpoch}-${toEpoch}`)
     writeToFile(validatorsCsv, `eligible_validators_${fromEpoch}-${toEpoch}`)
     writeToFile(ownerAddressCsv, `eligible_ownerAddress_${fromEpoch}-${toEpoch}`)
