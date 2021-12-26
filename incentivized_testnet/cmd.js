@@ -9,7 +9,7 @@ const stringify = require('csv-stringify');
 const {readFile, stat} = require('fs').promises;
 const {Client} = require('@elastic/elasticsearch');
 const commandLineArgs = require('command-line-args')
-const {fetchOperatorsValidators, getSsvBalances, getValidators} = require('./helpers/utilis')
+const {fetchOperatorsValidators, getSsvBalances} = require('./helpers/utilis')
 
 const web3 = new Web3(process.env.NODE_URL);
 
@@ -171,6 +171,7 @@ async function createEligibleReport(fromEpoch, toEpoch) {
     const allOperatorAlloc = 1400;
     const allValidatorAlloc = 1200;
     const verifiedOperatorAlloc = 1400;
+    const validatorCoefficient = 50;
     const contractValidators = {};
     const operatorByOwnerAddress = {};
     const validatorByOwnerAddress = {};
@@ -189,13 +190,13 @@ async function createEligibleReport(fromEpoch, toEpoch) {
     console.log(`Division of operators to ownerAddress`)
     for (const publicKey of Object.keys(operators)) {
         const operator = operators[publicKey];
-        // if (operator.performance >= process.env.MINIMUM_ELIGIBLE_SCORE) {
+        if (operator.performance >= process.env.MINIMUM_ELIGIBLE_SCORE) {
             if (operatorByOwnerAddress[operator.ownerAddress.toLowerCase()]) {
                 operatorByOwnerAddress[operator.ownerAddress.toLowerCase()].push(operator)
             } else {
                 operatorByOwnerAddress[operator.ownerAddress.toLowerCase()] = [operator]
             }
-        // }
+        }
     }
 
     console.log(`Division of validators to ownerAddress`)
@@ -203,13 +204,13 @@ async function createEligibleReport(fromEpoch, toEpoch) {
         const validator = validators[publicKey];
         let validatorOwnerAddress = contractValidators[publicKey];
         if (validatorOwnerAddress) validatorOwnerAddress = validatorOwnerAddress.toLowerCase();
-        // if (validator.performance >= process.env.MINIMUM_ELIGIBLE_SCORE) {
+        if (validator.performance >= process.env.MINIMUM_ELIGIBLE_SCORE) {
             if (validatorByOwnerAddress[validatorOwnerAddress]) {
                 validatorByOwnerAddress[validatorOwnerAddress].push(validator)
             } else {
                 validatorByOwnerAddress[validatorOwnerAddress] = [validator]
             }
-        // }
+        }
     }
 
     // PREPARE CSV FOR OWNER ADDRESS INCENTIVES
@@ -226,16 +227,13 @@ async function createEligibleReport(fromEpoch, toEpoch) {
     for (const ownerAddress of ownersAddresses) {
         let verifiedOperatorsCount = 0;
         let operatorsAvgPerformance = 0;
+        let allOperatorsCount = 0;
         let operatorsManagedValidators = 0;
         let verifiedOperatorsAvgPerformance = 0;
         let verifiedOperatorsManagedValidators = 0;
         let ssvBalance = ownerAddressBalance[ownerAddress];
-        validatorByOwnerAddress[ownerAddress]?.forEach(() => {
-            if (ssvBalance > 0) {
-                utilities.ssvHoldersValidatorsWeight += ssvBalance
-            }
-            ++utilities.allValidatorsWeight;
-        });
+        const validators = validatorByOwnerAddress[ownerAddress]?.length ?? 0;
+        const weight = ssvBalance * Math.log(validatorCoefficient * validators + 1);
 
         operatorByOwnerAddress[ownerAddress]?.forEach((operator) => {
             if (operator.verified) {
@@ -243,15 +241,18 @@ async function createEligibleReport(fromEpoch, toEpoch) {
                 verifiedOperatorsAvgPerformance += operator.performance;
                 verifiedOperatorsManagedValidators += operator.validatorsManaged;
             }
+            ++allOperatorsCount
             operatorsAvgPerformance += operator.performance;
             operatorsManagedValidators += operator.validatorsManaged;
         });
         if (operatorsAvgPerformance > 0) {
-            operatorsAvgPerformance = operatorsAvgPerformance / operatorByOwnerAddress[ownerAddress]?.length
+            operatorsAvgPerformance = operatorsAvgPerformance / allOperatorsCount
         }
         if (verifiedOperatorsAvgPerformance > 0) {
             verifiedOperatorsAvgPerformance = verifiedOperatorsAvgPerformance / verifiedOperatorsCount
         }
+        utilities.allValidatorsWeight += validators;
+        utilities.ssvHoldersValidatorsWeight += weight;
         utilities.allOperatorsWeight += operatorsAvgPerformance * operatorsManagedValidators;
         utilities.verifiedOperatorsWeight += verifiedOperatorsAvgPerformance * verifiedOperatorsManagedValidators;
 
@@ -262,7 +263,7 @@ async function createEligibleReport(fromEpoch, toEpoch) {
     for (const ownerAddress of [...Object.keys(validatorByOwnerAddress)]) {
         const balance = ownerAddressBalance[ownerAddress];
         const validators = validatorByOwnerAddress[ownerAddress].length;
-        const weight = balance * validators
+        const weight = balance * Math.log(validatorCoefficient * validators + 1);
         const rewardSsv = weight / utilities.ssvHoldersValidatorsWeight * ssvHoldersAlloc;
         const rewardNonSsv = validators / utilities.allValidatorsWeight * allValidatorAlloc;
         const total = rewardSsv + rewardNonSsv;
@@ -394,10 +395,10 @@ async function createEligibleReport(fromEpoch, toEpoch) {
         if (allOperatorsPerformance > 0) allOperatorsPerformance = allOperatorsPerformance / allOperators
         if (ownerAddressValidators > 0) rewardAllValidators = ownerAddressValidators / utilities.allValidatorsWeight * allValidatorAlloc;
         if (ssvBalance > 0 && ownerAddressValidators > 0) {
-            rewardValidatorsWithSsv = ssvBalance * ownerAddressValidators / utilities.ssvHoldersValidatorsWeight * ssvHoldersAlloc
+            rewardValidatorsWithSsv = ssvBalance * Math.log(validatorCoefficient * ownerAddressValidators + 1) / utilities.ssvHoldersValidatorsWeight * ssvHoldersAlloc
         }
         if (verifiedOperatorsCounter > 0 && verifiedOperatorsPerformance > 0) {
-            rewardVerifiedOperators = verifiedOperatorsPerformance * allOperatorsValidators / utilities.verifiedOperatorsWeight * verifiedOperatorAlloc;
+            rewardVerifiedOperators = verifiedOperatorsPerformance * validatorsManagedByVerifiedOperators / utilities.verifiedOperatorsWeight * verifiedOperatorAlloc;
         }
         if (allOperatorsPerformance > 0) {
             rewardAllOperators = allOperatorsPerformance * allOperatorsValidators / utilities.allOperatorsWeight * allOperatorAlloc;

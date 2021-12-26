@@ -28,7 +28,7 @@ async function fetchOperators(fromEpoch, toEpoch) {
                                     validatorsManaged: 0,
                                     publicKey: cell.address,
                                     ownerAddress: cell.owner_address,
-                                    verified: cell.type === 'verified_operator'
+                                    verified: cell.type === 'verified_operator' || cell.type === 'dapp_node'
                                 }
                             )
                         })
