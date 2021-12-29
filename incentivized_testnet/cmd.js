@@ -187,6 +187,23 @@ async function createEligibleReport(fromEpoch, toEpoch) {
 
     const {operators, validators} = await fetchOperatorsValidators(fromEpoch, toEpoch);
 
+    console.log(`Division of validators to ownerAddress`)
+    for (const publicKey of Object.keys(validators)) {
+        const validator = validators[publicKey];
+        let validatorOwnerAddress = contractValidators[publicKey];
+        if (validatorOwnerAddress) validatorOwnerAddress = validatorOwnerAddress.toLowerCase();
+        if (validator.performance >= process.env.MINIMUM_ELIGIBLE_SCORE) {
+            validator.operators.forEach(operator => {
+                if (operators[operator.address]) operators[operator.address].validatorsManaged += 1
+            })
+            if (validatorByOwnerAddress[validatorOwnerAddress]) {
+                validatorByOwnerAddress[validatorOwnerAddress].push(validator)
+            } else {
+                validatorByOwnerAddress[validatorOwnerAddress] = [validator]
+            }
+        }
+    }
+
     console.log(`Division of operators to ownerAddress`)
     for (const publicKey of Object.keys(operators)) {
         const operator = operators[publicKey];
@@ -195,20 +212,6 @@ async function createEligibleReport(fromEpoch, toEpoch) {
                 operatorByOwnerAddress[operator.ownerAddress.toLowerCase()].push(operator)
             } else {
                 operatorByOwnerAddress[operator.ownerAddress.toLowerCase()] = [operator]
-            }
-        }
-    }
-
-    console.log(`Division of validators to ownerAddress`)
-    for (const publicKey of Object.keys(validators)) {
-        const validator = validators[publicKey];
-        let validatorOwnerAddress = contractValidators[publicKey];
-        if (validatorOwnerAddress) validatorOwnerAddress = validatorOwnerAddress.toLowerCase();
-        if (validator.performance >= process.env.MINIMUM_ELIGIBLE_SCORE) {
-            if (validatorByOwnerAddress[validatorOwnerAddress]) {
-                validatorByOwnerAddress[validatorOwnerAddress].push(validator)
-            } else {
-                validatorByOwnerAddress[validatorOwnerAddress] = [validator]
             }
         }
     }

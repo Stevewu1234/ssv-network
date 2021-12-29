@@ -78,9 +78,6 @@ async function fetchValidators(fromEpoch, toEpoch) {
                         const validatorPublicKey = cell.publicKey.startsWith('0x') ? cell.publicKey : `0x${cell.publicKey}`;
                         getPerformance('validator', cell.publicKey, fromEpoch, toEpoch).then((performance) => {
                             console.log('prepare Validator: ' + counter + ' / ' + validatorsLength)
-                            cell.operators.forEach(operator => {
-                                if (hashedOperators[operator.address]) hashedOperators[operator.address].validatorsManaged += 1
-                            })
                             ++counter
                             resolveValidators({
                                 publicKey: validatorPublicKey,
