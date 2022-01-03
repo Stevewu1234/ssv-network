@@ -217,7 +217,7 @@ async function createEligibleReport(fromEpoch, toEpoch) {
     }
 
     // PREPARE CSV FOR OWNER ADDRESS INCENTIVES
-    const ownersAddresses = [...new Set([...Object.keys(validatorByOwnerAddress), ...Object.keys(operatorByOwnerAddress)])].filter(e => e !== '0x943a1b677da0ac80f380f08731fae841b1201402');
+    const ownersAddresses = [...new Set([...Object.keys(validatorByOwnerAddress), ...Object.keys(operatorByOwnerAddress)])]
     const ownerAddressBalance = await getSsvBalances(ownersAddresses)
 
     const utilities = {

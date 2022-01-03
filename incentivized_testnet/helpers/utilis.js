@@ -98,6 +98,7 @@ async function fetchOperatorsValidators(fromEpoch, toEpoch) {
     return new Promise((resolve => {
         fetchOperators(fromEpoch, toEpoch).then(() => {
             fetchValidators(fromEpoch, toEpoch).then(() => {
+                delete hashedValidators['0x943a1b677da0ac80f380f08731fae841b1201402']
                 resolve({operators: hashedOperators, validators: hashedValidators});
             });
         })
