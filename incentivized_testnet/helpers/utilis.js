@@ -98,7 +98,7 @@ async function fetchOperatorsValidators(fromEpoch, toEpoch) {
     return new Promise((resolve => {
         fetchOperators(fromEpoch, toEpoch).then(() => {
             fetchValidators(fromEpoch, toEpoch).then(() => {
-                delete hashedValidators['0x943a1b677da0ac80f380f08731fae841b1201402']
+                delete hashedOperators['0x943a1b677da0ac80f380f08731fae841b1201402'];
                 resolve({operators: hashedOperators, validators: hashedValidators});
             });
         })
@@ -180,15 +180,17 @@ async function getSsvBalance(ownerAddress) {
 
 async function getPerformance(type, publicKey, fromEpoch, toEpoch) {
     return new Promise(resolve => {
-        got.get(`${process.env.EXPLORER_URI}/${type + 's'}/incentivized/?${type}=${publicKey}&network=prater&epochs=${fromEpoch}-${toEpoch}`).then((response) => {
-            const performance = JSON.parse(response.body)
-            if (performance.rounds.length === 0) {
-                resolve(0);
-            }
-            resolve(performance.rounds[0].performance);
-        }).catch(() => {
-            resolve(0);
-        })
+        setTimeout(()=> {
+            got.get(`${process.env.EXPLORER_URI}/${type + 's'}/incentivized/?${type}=${publicKey}&network=prater&epochs=${fromEpoch}-${toEpoch}`).then((response) => {
+                const performance = JSON.parse(response.body)
+                if (performance.rounds.length === 0) {
+                    resolve(0);
+                }
+                resolve(performance.rounds[0].performance);
+            }).catch(() => {
+                resolve(getPerformance(type, publicKey, fromEpoch, toEpoch))
+            })
+        }, 1000)
     })
 }
 
