@@ -8,37 +8,36 @@ const hashedOperators = {};
 const hashedValidators = {};
 
 async function fetchOperators(fromEpoch, toEpoch) {
-    return new Promise(resolve => {
-        got.get(process.env.EXPLORER_URI + '/operators/graph/').then(async (response) => {
+    return new Promise((resolve, reject) => {
+        getOperators().then(async (operators) => {
             let counter = 1;
-            const data = JSON.parse(response.body)
-            const operators = data.operators;
             const operatorsCount = operators.length;
             const batches = new Array(Math.ceil(operators.length / process.env.RATE_LIMIT)).fill().map(_ => operators.splice(0, process.env.RATE_LIMIT))
             for (const batch of batches) {
-                const performances = await Promise.all(batch.map(cell => {
-                    return new Promise((resolveOperators) => {
-                        getPerformance('operator', cell.address, fromEpoch, toEpoch).then((performance) => {
+                for (const subBatch of batch) {
+                    await new Promise((resolveOperators) => {
+                        getPerformance('operator', subBatch.address, fromEpoch, toEpoch).then((performance) => {
                             console.log(`prepare Operator: ${counter} / ${operatorsCount}`)
                             ++counter
-                            resolveOperators(
-                                {
+                            if (subBatch.owner_address !== '0x943a1b677da0ac80f380f08731fae841b1201402') {
+                                hashedOperators[subBatch.address] = {
                                     performance,
-                                    name: cell.name,
+                                    name: subBatch.name,
                                     validatorsManaged: 0,
-                                    publicKey: cell.address,
-                                    ownerAddress: cell.owner_address,
-                                    verified: cell.type === 'verified_operator' || cell.type === 'dapp_node'
+                                    publicKey: subBatch.address,
+                                    ownerAddress: subBatch.owner_address,
+                                    verified: subBatch.type === 'verified_operator' || subBatch.type === 'dapp_node'
                                 }
-                            )
+                            }
+                            resolveOperators()
                         })
                     })
-                }))
-                performances.forEach(operator => hashedOperators[operator.publicKey] = operator)
+                }
             }
             resolve()
-        }).catch(()=>{
-            resolve(fetchOperators(fromEpoch, toEpoch));
+        }).catch((e) => {
+            console.log('<<<<<<<<<<<error>>>>>>>>>>>');
+            reject(e.message);
         })
     });
 }
@@ -47,11 +46,49 @@ async function getValidators() {
     return new Promise(resolve => {
         got.get(process.env.EXPLORER_URI + '/validators/detailed?perPage=500&page=1').then(async (response) => {
             const data = JSON.parse(response.body)
-            const numOfPages = data.pagination.pages;
-            const validators = await Promise.all(Array(numOfPages).fill(null).map((_, i) => getValidatorsRequest(i + 2)));
-            resolve([...validators.flat(),...data.validators]);
-        }).catch(()=>{
+            const numOfPages = data.pagination.pages - 1;
+            const validators = [];
+            for (let i in Array(numOfPages).fill(null)) {
+                const loadValidators = await getValidatorsRequest(Number(i) + 2)
+                validators.push(loadValidators);
+            }
+            resolve([...validators.flat(), ...data.validators]);
+        }).catch(() => {
             resolve(getValidators());
+        });
+    })
+}
+
+async function getOperators() {
+    return new Promise(async resolve => {
+        got.get(process.env.EXPLORER_URI + '/operators/graph?perPage=200&page=1').then(async (response) => {
+            const data = JSON.parse(response.body)
+            const numOfPages = data.pagination.pages - 1;
+            const operators = [];
+            for (let i in Array(numOfPages).fill(null)) {
+                const loadOperators = await getOperatorsRequest(Number(i) + 2)
+                operators.push(loadOperators);
+            }
+            resolve([...operators.flat(), ...data.operators]);
+        }).catch(() => {
+            resolve(getOperators());
+        });
+    })
+}
+
+async function getOperatorsRequest(page) {
+    return new Promise(resolve => {
+        const start = performance.now();
+        got.get(process.env.EXPLORER_URI + `/operators/graph?perPage=200&page=${page}`).then(async (response) => {
+            const data = JSON.parse(response.body)
+            const duration = performance.now() - start;
+            if (duration > 250) {
+                setTimeout(() => {
+                    resolve(data.operators);
+                }, duration - 250)
+            } else {
+                resolve(data.operators);
+            }
         });
     })
 }
@@ -66,30 +103,32 @@ async function getValidatorsRequest(page) {
 }
 
 async function fetchValidators(fromEpoch, toEpoch) {
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
         getValidators().then(async (validators) => {
-            // validators = validators.slice(0,100);
             let counter = 1;
             const validatorsLength = validators.length;
             const batches = new Array(Math.ceil(validators.length / process.env.RATE_LIMIT)).fill().map(_ => validators.splice(0, process.env.RATE_LIMIT))
             for (const batch of batches) {
-                const performances = await Promise.all(batch.map(cell => {
-                    return new Promise((resolveValidators) => {
-                        const validatorPublicKey = cell.publicKey.startsWith('0x') ? cell.publicKey : `0x${cell.publicKey}`;
-                        getPerformance('validator', cell.publicKey, fromEpoch, toEpoch).then((performance) => {
-                            console.log('prepare Validator: ' + counter + ' / ' + validatorsLength)
+                for (const subBatch of batch) {
+                    await new Promise((resolveValidators) => {
+                        const validatorPublicKey = subBatch.publicKey.startsWith('0x') ? subBatch.publicKey : `0x${subBatch.publicKey}`;
+                        getPerformance('validator', subBatch.publicKey, fromEpoch, toEpoch).then((performance) => {
+                            console.log('prepare Validator: ' + counter + ' / ' + validatorsLength);
                             ++counter
-                            resolveValidators({
+                            hashedValidators[validatorPublicKey] = {
                                 publicKey: validatorPublicKey,
                                 performance,
-                                operators: cell.operators
-                            })
+                                operators: subBatch.operators
+                            }
+                            resolveValidators()
                         })
                     })
-                }))
-                performances.forEach(validator => hashedValidators[validator.publicKey] = validator)
+                }
             }
             resolve();
+        }).catch((e) => {
+            console.log('<<<<<<<<<<<error>>>>>>>>>>>');
+            reject(e.message);
         })
     })
 }
@@ -98,7 +137,6 @@ async function fetchOperatorsValidators(fromEpoch, toEpoch) {
     return new Promise((resolve => {
         fetchOperators(fromEpoch, toEpoch).then(() => {
             fetchValidators(fromEpoch, toEpoch).then(() => {
-                delete hashedOperators['0x943a1b677da0ac80f380f08731fae841b1201402'];
                 resolve({operators: hashedOperators, validators: hashedValidators});
             });
         })
@@ -180,24 +218,26 @@ async function getSsvBalance(ownerAddress) {
 
 async function getPerformance(type, publicKey, fromEpoch, toEpoch) {
     return new Promise(resolve => {
-        setTimeout(()=> {
-            got.get(`${process.env.EXPLORER_URI}/${type + 's'}/incentivized/?${type}=${publicKey}&network=prater&epochs=${fromEpoch}-${toEpoch}`).then((response) => {
-                const performance = JSON.parse(response.body)
-                if (performance.rounds.length === 0) {
-                    resolve(0);
-                }
-                resolve(performance.rounds[0].performance);
-            }).catch(() => {
-                resolve(getPerformance(type, publicKey, fromEpoch, toEpoch))
-            })
-        }, 1000)
+        let balance = 0;
+        console.log(`${process.env.EXPLORER_URI}/${type + 's'}/incentivized?${type}=${publicKey}&network=prater&epochs=${fromEpoch}-${toEpoch}`);
+        got.get(`${process.env.EXPLORER_URI}/${type + 's'}/incentivized?${type}=${publicKey}&network=prater&epochs=${fromEpoch}-${toEpoch}`).then((response) => {
+            const itemPerformance = JSON.parse(response.body)
+            if (itemPerformance.rounds.length > 0) {
+                balance = itemPerformance.rounds[0].performance;
+            }
+            resolve(balance);
+        }).catch(() => {
+            console.log('<<<<<<<<<<<<<<<<<<<<<<<<<<<<error>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+            console.log(`${process.env.EXPLORER_URI}/${type + 's'}/incentivized?${type}=${publicKey}&network=prater&epochs=${fromEpoch}-${toEpoch}`);
+            console.log('<<<<<<<<<<<<<<<<<<<<<<<<<<<<error>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+            resolve(getPerformance(type, publicKey, fromEpoch, toEpoch))
+        })
     })
 }
 
 
 module.exports = {
     uniq,
-    getValidators,
     getPerformance,
     getSsvBalances,
     fetchOperatorsValidators

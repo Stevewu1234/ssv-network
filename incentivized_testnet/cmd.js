@@ -408,24 +408,26 @@ async function createEligibleReport(fromEpoch, toEpoch) {
         }
         totalReward = rewardAllValidators + rewardValidatorsWithSsv + rewardVerifiedOperators + rewardAllOperators;
 
-        ownerAddressCsv.push(
-            [
-                ownerAddress,
-                verifiedOperatorsCounter,
-                verifiedOperatorsPerformance,
-                validatorsManagedByVerifiedOperators,
-                allOperators,
-                allOperatorsPerformance,
-                allOperatorsValidators,
-                ownerAddressValidators,
-                ssvBalance,
-                rewardAllValidators,
-                rewardValidatorsWithSsv,
-                rewardVerifiedOperators,
-                rewardAllOperators,
-                totalReward
-            ]
-        )
+        if (totalReward > 0) {
+            ownerAddressCsv.push(
+                [
+                    ownerAddress,
+                    verifiedOperatorsCounter,
+                    verifiedOperatorsPerformance,
+                    validatorsManagedByVerifiedOperators,
+                    allOperators,
+                    allOperatorsPerformance,
+                    allOperatorsValidators,
+                    ownerAddressValidators,
+                    ssvBalance,
+                    rewardAllValidators,
+                    rewardValidatorsWithSsv,
+                    rewardVerifiedOperators,
+                    rewardAllOperators,
+                    totalReward
+                ]
+            )
+        }
     }
 
     const headers = [['Owner Address', 'validators (#)', 'operators (#)']]

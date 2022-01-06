@@ -1,5 +1,5 @@
 node_modules
-.env
+incentivized_testnet/.env
 #Hardhat files
 cache
 coverage
