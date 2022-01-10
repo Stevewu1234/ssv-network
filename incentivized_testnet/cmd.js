@@ -167,10 +167,10 @@ async function fetchData() {
 }
 
 async function createEligibleReport(fromEpoch, toEpoch) {
-    const ssvHoldersAlloc = 4000;
-    const allOperatorAlloc = 1400;
-    const allValidatorAlloc = 1200;
-    const verifiedOperatorAlloc = 1400;
+    const ssvHoldersAlloc = 6400;
+    const allOperatorAlloc = 2240;
+    const allValidatorAlloc = 1920;
+    const verifiedOperatorAlloc = 2240;
     const validatorCoefficient = 50;
     const contractValidators = {};
     const operatorByOwnerAddress = {};
