@@ -256,8 +256,8 @@ async function createEligibleReport(fromEpoch, toEpoch) {
         }
         utilities.allValidatorsWeight += validators;
         utilities.ssvHoldersValidatorsWeight += weight;
-        utilities.allOperatorsWeight += operatorsAvgPerformance * operatorsManagedValidators;
-        utilities.verifiedOperatorsWeight += verifiedOperatorsAvgPerformance * verifiedOperatorsManagedValidators;
+        utilities.allOperatorsWeight += operatorsAvgPerformance * Math.log(0.01 * operatorsManagedValidators + 1);
+        utilities.verifiedOperatorsWeight += verifiedOperatorsAvgPerformance * Math.log(0.01 * verifiedOperatorsManagedValidators + 1);
 
     }
 
@@ -320,8 +320,8 @@ async function createEligibleReport(fromEpoch, toEpoch) {
         })
         if (verifiedOperatorsPerformance > 0) verifiedOperatorsPerformance = verifiedOperatorsPerformance / verifiedOperators;
         if (allOperatorsPerformance > 0) allOperatorsPerformance = allOperatorsPerformance / allOperators;
-        let verifiedWeight = verifiedOperatorsPerformance * verifiedOperatorsValidators;
-        let allOperatorsWeight = allOperatorsPerformance * allOperatorsValidators;
+        let verifiedWeight = verifiedOperatorsPerformance * Math.log(0.01 * verifiedOperatorsValidators + 1);
+        let allOperatorsWeight = allOperatorsPerformance * Math.log(0.01 * allOperatorsValidators + 1);
         if (verifiedWeight > 0) verifiedOperatorsReward = verifiedWeight / utilities.verifiedOperatorsWeight * verifiedOperatorAlloc;
         if (allOperatorsWeight > 0) allOperatorsReward = allOperatorsWeight / utilities.allOperatorsWeight * allOperatorAlloc;
         let total = verifiedOperatorsReward + allOperatorsReward
@@ -401,10 +401,10 @@ async function createEligibleReport(fromEpoch, toEpoch) {
             rewardValidatorsWithSsv = ssvBalance * Math.log(validatorCoefficient * ownerAddressValidators + 1) / utilities.ssvHoldersValidatorsWeight * ssvHoldersAlloc
         }
         if (verifiedOperatorsCounter > 0 && verifiedOperatorsPerformance > 0) {
-            rewardVerifiedOperators = verifiedOperatorsPerformance * validatorsManagedByVerifiedOperators / utilities.verifiedOperatorsWeight * verifiedOperatorAlloc;
+            rewardVerifiedOperators = verifiedOperatorsPerformance * Math.log(0.01 * validatorsManagedByVerifiedOperators + 1) / utilities.verifiedOperatorsWeight * verifiedOperatorAlloc;
         }
         if (allOperatorsPerformance > 0) {
-            rewardAllOperators = allOperatorsPerformance * allOperatorsValidators / utilities.allOperatorsWeight * allOperatorAlloc;
+            rewardAllOperators = allOperatorsPerformance * Math.log(0.01 * allOperatorsValidators + 1) / utilities.allOperatorsWeight * allOperatorAlloc;
         }
         totalReward = rewardAllValidators + rewardValidatorsWithSsv + rewardVerifiedOperators + rewardAllOperators;
 
