@@ -82,17 +82,9 @@ async function getOperators() {
 
 async function getOperatorsRequest(page) {
     return new Promise(resolve => {
-        const start = performance.now();
         got.get(process.env.EXPLORER_URI + `/operators/graph?perPage=200&page=${page}`).then(async (response) => {
             const data = JSON.parse(response.body)
-            const duration = performance.now() - start;
-            if (duration > 250) {
-                setTimeout(() => {
-                    resolve(data.operators);
-                }, duration - 250)
-            } else {
-                resolve(data.operators);
-            }
+            resolve(data.operators);
         });
     })
 }
