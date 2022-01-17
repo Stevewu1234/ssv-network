@@ -1,8 +1,12 @@
 const got = require('got');
-
+const Web3 = require('web3');
 function uniq(a) {
     return [...new Set(a)];
 }
+
+const web3 = new Web3(process.env.INFURA_URL);
+const CONTRACT_ABI = require('../vestedContractAbi.json');
+const contract = new web3.eth.Contract(CONTRACT_ABI, '0xB8471180C79A0a69C7790A1CCf62e91b3c3559Bf');
 
 const hashedOperators = {};
 const hashedValidators = {};
@@ -193,19 +197,22 @@ async function getSsvBalance(ownerAddress) {
         };
         got.post(url, opts).then((res) => {
             const response = JSON.parse(res.body);
+            let ownerAddressBalance = 0;
             if (response.data && response.data.ethereum !== null) {
                 const balances = response.data.ethereum.address[0].balances
                 if (balances) {
                     balances.forEach((balance) => {
                         if (balance.currency.symbol === 'SSV') {
-                            resolve(balance.value)
+                            ownerAddressBalance = balance.value
                         }
                     })
                 }
-                resolve(0)
-            } else {
-                resolve(0)
             }
+
+            contract.methods.totalVestingBalanceOf(ownerAddress).call().then((amount) => {
+                const vestedMoney = web3.utils.fromWei(amount);
+                resolve(ownerAddressBalance + vestedMoney);
+            });
         }).catch((e) => {
             console.log(`Error with ${ownerAddress}`)
             console.log(`calculate again...`)
