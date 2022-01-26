@@ -353,8 +353,8 @@
       }
     },
     "b41075650d16ff5a07485280f53b6f00b0d6b15658221b2baf73984c51436276": {
-      "address": "0xb982aDE381bf3B704c17dF18f1C55406188C004f",
-      "txHash": "0x2af0c01d455303b8b06f9cea948973904a77c461c15dc3692df8cae488d0913a",
+      "address": "0xf7Ff1767A0bfEF63fb9e0da5e4Cf31746FCF644A",
+      "txHash": "0x228e2fb5c12df631676dde676fba4a6690c5805ff020ca29fd71a36a255578f5",
       "layout": {
         "storage": [
           {
@@ -482,8 +482,395 @@
       }
     },
     "8e93369b652931850f8adfc021fd3c7cad71b9fcd47f2eda47741b4bf3ec51bb": {
-      "address": "0x95411f0eff85D03368f88c9B52246d1b0f4acb74",
-      "txHash": "0x37e32067d38ac012a3ea0d2982f7b51509b973031de456df6880df9f73a53193",
+      "address": "0x527207A58c41dCD8F8d17046F97A96d8FfB5eFe7",
+      "txHash": "0x071d7a0ce61f0547480041b1efbb2d6c8d7234790b96e1594f8a839c114bb430",
+      "layout": {
+        "storage": [
+          {
+            "contract": "SSVNetwork",
+            "label": "operatorCount",
+            "type": "t_uint256",
+            "src": "contracts/SSVNetwork.sol:8"
+          },
+          {
+            "contract": "SSVNetwork",
+            "label": "validatorCount",
+            "type": "t_uint256",
+            "src": "contracts/SSVNetwork.sol:9"
+          },
+          {
+            "contract": "SSVNetwork",
+            "label": "operators",
+            "type": "t_mapping(t_bytes_memory_ptr,t_struct(Operator)19_storage)",
+            "src": "contracts/SSVNetwork.sol:11"
+          },
+          {
+            "contract": "SSVNetwork",
+            "label": "validators",
+            "type": "t_mapping(t_bytes_memory_ptr,t_struct(Validator)28_storage)",
+            "src": "contracts/SSVNetwork.sol:12"
+          },
+          {
+            "contract": "SSVNetwork",
+            "label": "validatorsPerOperator",
+            "type": "t_mapping(t_bytes_memory_ptr,t_uint256)",
+            "src": "contracts/SSVNetwork.sol:14"
+          },
+          {
+            "contract": "SSVNetwork",
+            "label": "validatorsPerOperatorLimit",
+            "type": "t_uint256",
+            "src": "contracts/SSVNetwork.sol:16"
+          }
+        ],
+        "types": {
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_bytes_memory_ptr,t_struct(Operator)19_storage)": {
+            "label": "mapping(bytes => struct ISSVNetwork.Operator)"
+          },
+          "t_bytes_storage": {
+            "label": "bytes"
+          },
+          "t_struct(Operator)19_storage": {
+            "label": "struct ISSVNetwork.Operator",
+            "members": [
+              {
+                "label": "name",
+                "type": "t_string_storage"
+              },
+              {
+                "label": "ownerAddress",
+                "type": "t_address"
+              },
+              {
+                "label": "publicKey",
+                "type": "t_bytes_storage"
+              },
+              {
+                "label": "score",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_mapping(t_bytes_memory_ptr,t_struct(Validator)28_storage)": {
+            "label": "mapping(bytes => struct ISSVNetwork.Validator)"
+          },
+          "t_struct(Validator)28_storage": {
+            "label": "struct ISSVNetwork.Validator",
+            "members": [
+              {
+                "label": "ownerAddress",
+                "type": "t_address"
+              },
+              {
+                "label": "publicKey",
+                "type": "t_bytes_storage"
+              },
+              {
+                "label": "oess",
+                "type": "t_array(t_struct(Oess)10_storage)dyn_storage"
+              }
+            ]
+          },
+          "t_array(t_struct(Oess)10_storage)dyn_storage": {
+            "label": "struct ISSVNetwork.Oess[]"
+          },
+          "t_struct(Oess)10_storage": {
+            "label": "struct ISSVNetwork.Oess",
+            "members": [
+              {
+                "label": "index",
+                "type": "t_uint256"
+              },
+              {
+                "label": "operatorPublicKey",
+                "type": "t_bytes_storage"
+              },
+              {
+                "label": "sharedPublicKey",
+                "type": "t_bytes_storage"
+              },
+              {
+                "label": "encryptedKey",
+                "type": "t_bytes_storage"
+              }
+            ]
+          },
+          "t_mapping(t_bytes_memory_ptr,t_uint256)": {
+            "label": "mapping(bytes => uint256)"
+          }
+        }
+      }
+    },
+    "b6bcad5fcf9a658bc016eb42419b358e908ff5c2beb15ed362202e7a098e5007": {
+      "address": "0x67B75a16158cEF8E5888DE66dC5e33be50e0E5e3",
+      "txHash": "0x8670920ce7fc9bc4791dff01b2b1d5de0a2768019396baa1ffed651ea3fdf007",
+      "layout": {
+        "storage": [
+          {
+            "contract": "SSVNetwork",
+            "label": "operatorCount",
+            "type": "t_uint256",
+            "src": "contracts/SSVNetwork.sol:8"
+          },
+          {
+            "contract": "SSVNetwork",
+            "label": "validatorCount",
+            "type": "t_uint256",
+            "src": "contracts/SSVNetwork.sol:9"
+          },
+          {
+            "contract": "SSVNetwork",
+            "label": "operators",
+            "type": "t_mapping(t_bytes_memory_ptr,t_struct(Operator)19_storage)",
+            "src": "contracts/SSVNetwork.sol:11"
+          },
+          {
+            "contract": "SSVNetwork",
+            "label": "validators",
+            "type": "t_mapping(t_bytes_memory_ptr,t_struct(Validator)28_storage)",
+            "src": "contracts/SSVNetwork.sol:12"
+          },
+          {
+            "contract": "SSVNetwork",
+            "label": "validatorsPerOperator",
+            "type": "t_mapping(t_bytes_memory_ptr,t_uint256)",
+            "src": "contracts/SSVNetwork.sol:14"
+          },
+          {
+            "contract": "SSVNetwork",
+            "label": "validatorsPerOperatorLimit",
+            "type": "t_uint256",
+            "src": "contracts/SSVNetwork.sol:16"
+          }
+        ],
+        "types": {
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_bytes_memory_ptr,t_struct(Operator)19_storage)": {
+            "label": "mapping(bytes => struct ISSVNetwork.Operator)"
+          },
+          "t_bytes_storage": {
+            "label": "bytes"
+          },
+          "t_struct(Operator)19_storage": {
+            "label": "struct ISSVNetwork.Operator",
+            "members": [
+              {
+                "label": "name",
+                "type": "t_string_storage"
+              },
+              {
+                "label": "ownerAddress",
+                "type": "t_address"
+              },
+              {
+                "label": "publicKey",
+                "type": "t_bytes_storage"
+              },
+              {
+                "label": "score",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_mapping(t_bytes_memory_ptr,t_struct(Validator)28_storage)": {
+            "label": "mapping(bytes => struct ISSVNetwork.Validator)"
+          },
+          "t_struct(Validator)28_storage": {
+            "label": "struct ISSVNetwork.Validator",
+            "members": [
+              {
+                "label": "ownerAddress",
+                "type": "t_address"
+              },
+              {
+                "label": "publicKey",
+                "type": "t_bytes_storage"
+              },
+              {
+                "label": "oess",
+                "type": "t_array(t_struct(Oess)10_storage)dyn_storage"
+              }
+            ]
+          },
+          "t_array(t_struct(Oess)10_storage)dyn_storage": {
+            "label": "struct ISSVNetwork.Oess[]"
+          },
+          "t_struct(Oess)10_storage": {
+            "label": "struct ISSVNetwork.Oess",
+            "members": [
+              {
+                "label": "index",
+                "type": "t_uint256"
+              },
+              {
+                "label": "operatorPublicKey",
+                "type": "t_bytes_storage"
+              },
+              {
+                "label": "sharedPublicKey",
+                "type": "t_bytes_storage"
+              },
+              {
+                "label": "encryptedKey",
+                "type": "t_bytes_storage"
+              }
+            ]
+          },
+          "t_mapping(t_bytes_memory_ptr,t_uint256)": {
+            "label": "mapping(bytes => uint256)"
+          }
+        }
+      }
+    },
+    "91d7014a1c30ff385b6f09a5707fe4e27fbe3bcead16bed40870fba39535793c": {
+      "address": "0x3c73cB41F74DD8AAA64e12e0a146625c1497721a",
+      "txHash": "0x1526af00482a903a2ebc18712a48f92db812adcf72e5b8b8a34bd2fa8e173861",
+      "layout": {
+        "storage": [
+          {
+            "contract": "SSVNetwork",
+            "label": "operatorCount",
+            "type": "t_uint256",
+            "src": "contracts/SSVNetwork.sol:8"
+          },
+          {
+            "contract": "SSVNetwork",
+            "label": "validatorCount",
+            "type": "t_uint256",
+            "src": "contracts/SSVNetwork.sol:9"
+          },
+          {
+            "contract": "SSVNetwork",
+            "label": "operators",
+            "type": "t_mapping(t_bytes_memory_ptr,t_struct(Operator)19_storage)",
+            "src": "contracts/SSVNetwork.sol:11"
+          },
+          {
+            "contract": "SSVNetwork",
+            "label": "validators",
+            "type": "t_mapping(t_bytes_memory_ptr,t_struct(Validator)28_storage)",
+            "src": "contracts/SSVNetwork.sol:12"
+          },
+          {
+            "contract": "SSVNetwork",
+            "label": "validatorsPerOperator",
+            "type": "t_mapping(t_bytes_memory_ptr,t_uint256)",
+            "src": "contracts/SSVNetwork.sol:14"
+          },
+          {
+            "contract": "SSVNetwork",
+            "label": "validatorsPerOperatorLimit",
+            "type": "t_uint256",
+            "src": "contracts/SSVNetwork.sol:16"
+          }
+        ],
+        "types": {
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_bytes_memory_ptr,t_struct(Operator)19_storage)": {
+            "label": "mapping(bytes => struct ISSVNetwork.Operator)"
+          },
+          "t_bytes_storage": {
+            "label": "bytes"
+          },
+          "t_struct(Operator)19_storage": {
+            "label": "struct ISSVNetwork.Operator",
+            "members": [
+              {
+                "label": "name",
+                "type": "t_string_storage"
+              },
+              {
+                "label": "ownerAddress",
+                "type": "t_address"
+              },
+              {
+                "label": "publicKey",
+                "type": "t_bytes_storage"
+              },
+              {
+                "label": "score",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_mapping(t_bytes_memory_ptr,t_struct(Validator)28_storage)": {
+            "label": "mapping(bytes => struct ISSVNetwork.Validator)"
+          },
+          "t_struct(Validator)28_storage": {
+            "label": "struct ISSVNetwork.Validator",
+            "members": [
+              {
+                "label": "ownerAddress",
+                "type": "t_address"
+              },
+              {
+                "label": "publicKey",
+                "type": "t_bytes_storage"
+              },
+              {
+                "label": "oess",
+                "type": "t_array(t_struct(Oess)10_storage)dyn_storage"
+              }
+            ]
+          },
+          "t_array(t_struct(Oess)10_storage)dyn_storage": {
+            "label": "struct ISSVNetwork.Oess[]"
+          },
+          "t_struct(Oess)10_storage": {
+            "label": "struct ISSVNetwork.Oess",
+            "members": [
+              {
+                "label": "index",
+                "type": "t_uint256"
+              },
+              {
+                "label": "operatorPublicKey",
+                "type": "t_bytes_storage"
+              },
+              {
+                "label": "sharedPublicKey",
+                "type": "t_bytes_storage"
+              },
+              {
+                "label": "encryptedKey",
+                "type": "t_bytes_storage"
+              }
+            ]
+          },
+          "t_mapping(t_bytes_memory_ptr,t_uint256)": {
+            "label": "mapping(bytes => uint256)"
+          }
+        }
+      }
+    },
+    "5689a8a9c79252db32d38b079f81bff9b0cc9022dbf2d161c82fa5804e132ae4": {
+      "address": "0xC5985fB36497E7a31630193db3f95Dcab0cfc6f9",
+      "txHash": "0x9303e82aae285e9174814430615eefddfb872d26625c7d621ef221149890e166",
       "layout": {
         "storage": [
           {
@@ -636,6 +1023,26 @@
       "address": "0xe3DCeE3E4Fbd60a4214dB32d939925c93d734CfC",
       "kind": "transparent",
       "txHash": "0xd2f84c3940d0815ee33045466e4a793b7154e3518f7080102e6e7737c998cd17"
+    },
+    {
+      "address": "0xEd9975E03CAdE87bEc237220a628b6f8847eFA51",
+      "kind": "transparent",
+      "txHash": "0xa4436ba87afacbdbd2722a6f97b5ff0b88fb51897df37696996eb8e112ec8718"
+    },
+    {
+      "address": "0x0B5E0fD4dF7A111a71494A7bab34CE3E55eD8136",
+      "kind": "transparent",
+      "txHash": "0x8e6def20985532c49e74dbf7157419aeea77d42900bd2088cd069df21e94359a"
+    },
+    {
+      "address": "0x927ED307C0382C735D8472C6C8a50Cb4cF50F660",
+      "kind": "transparent",
+      "txHash": "0x88a5410d34d7c9961351c1311e4fdf711e9ae8e7d50db9e98344ce2bc17d2451"
+    },
+    {
+      "address": "0x2c915d5FA4d0a7005884034aa791938Efc0DC87D",
+      "kind": "transparent",
+      "txHash": "0x76a103e716243d9467ac8ae24ed15b963fc8e2926e6c49a726dc9e5797af37e9"
     }
   ],
   "admin": {
