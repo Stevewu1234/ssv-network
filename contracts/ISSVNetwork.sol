@@ -85,6 +85,20 @@ interface ISSVNetwork {
     );
 
     /**
+     * @dev Emitted when an operator's metadata is updated.
+     * @param ownerAddress Operator's owner.
+     * @param publicKey Operator's public key.
+     * @param blockNumber from which block number.
+     * @param uri updated uri value.
+     */
+    event OperatorMetadataUpdated(
+        address indexed ownerAddress,
+        bytes publicKey,
+        uint256 blockNumber,
+        string uri
+    );
+
+    /**
      * @dev Emitted when the validator has been added.
      * @param ownerAddress The user's ethereum address that is the owner of the validator.
      * @param publicKey The public key of a validator.
@@ -180,7 +194,8 @@ interface ISSVNetwork {
     function registerOperator(
         string calldata name,
         bytes calldata publicKey,
-        uint256 fee
+        uint256 fee,
+        string calldata metadataUri
     ) external;
 
     /**
@@ -218,6 +233,13 @@ interface ISSVNetwork {
      * @param score The operators's updated score.
      */
     function updateOperatorScore(bytes calldata publicKey, uint256 score) external;
+
+    /**
+     * @dev Updates an operator metadata uri.
+     * @param publicKey Operator's public key.
+     * @param uri New uri.
+     */
+    function updateOperatorMetadataUri(bytes calldata publicKey, string calldata uri) external;
 
     /**
      * @dev Registers a new validator.

@@ -67,6 +67,20 @@ interface ISSVRegistry {
     );
 
     /**
+     * @dev Emitted when an operator's metadata is updated.
+     * @param ownerAddress Operator's owner.
+     * @param publicKey Operator's public key.
+     * @param blockNumber from which block number.
+     * @param uri updated uri value.
+     */
+    event OperatorMetadataUpdated(
+        address indexed ownerAddress,
+        bytes publicKey,
+        uint256 blockNumber,
+        string uri
+    );
+
+    /**
      * @dev Emitted when the validator has been added.
      * @param ownerAddress The user's ethereum address that is the owner of the validator.
      * @param publicKey The public key of a validator.
@@ -113,7 +127,7 @@ interface ISSVRegistry {
      * @param publicKey Operator's public key. Will be used to encrypt secret shares of validators keys.
      * @param fee The fee which the operator charges for each block.
      */
-    function registerOperator(string calldata name, address ownerAddress, bytes calldata publicKey, uint256 fee) external;
+    function registerOperator(string calldata name, address ownerAddress, bytes calldata publicKey, uint256 fee, string calldata metadataUri) external;
 
     /**
      * @dev removes an operator.
@@ -151,6 +165,16 @@ interface ISSVRegistry {
     function updateOperatorScore(
         bytes calldata publicKey,
         uint256 score
+    ) external;
+
+    /**
+     * @dev Updates an operator metadata uri.
+     * @param publicKey Operator's public key.
+     * @param uri New uri.
+     */
+    function updateOperatorMetadataUri(
+        bytes calldata publicKey,
+        string calldata uri
     ) external;
 
     /**

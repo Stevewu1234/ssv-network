@@ -1,6 +1,7 @@
 import { ethers, upgrades } from 'hardhat';
 
 async function main() {
+  /*
   console.log('Deploying OLDToken...');
   const oldTokenFactory = await ethers.getContractFactory('OldTokenMock');
   const oldToken = await oldTokenFactory.deploy();
@@ -17,14 +18,15 @@ async function main() {
   );
   await dex.deployed();
   console.log('Deploying SSVRegistry...');
+  */
   const ssvRegistryFactory = await ethers.getContractFactory('SSVRegistry');
   const ssvRegistry = await upgrades.deployProxy(ssvRegistryFactory, { initializer: false });
   await ssvRegistry.deployed();
   console.log('Deploying SSVNetwork...');
   const ssvNetworkFactory = await ethers.getContractFactory('SSVNetwork');
-  const ssvNetwork = await upgrades.deployProxy(ssvNetworkFactory, [ssvRegistry.address, ssvToken.address, process.env.MINIMUM_BLOCKS_BEFORE_LIQUIDATION, process.env.OPERATOR_MAX_FEE_INCREASE, process.env.SET_OPERATOR_FEE_PERIOD, process.env.APPROVE_OPERATOR_FEE_PERIOD]);
+  const ssvNetwork = await upgrades.deployProxy(ssvNetworkFactory, [ssvRegistry.address, '0x3651c03a8546da82affaef8c644d4e3efdd37718', process.env.MINIMUM_BLOCKS_BEFORE_LIQUIDATION, process.env.OPERATOR_MAX_FEE_INCREASE, process.env.SET_OPERATOR_FEE_PERIOD, process.env.APPROVE_OPERATOR_FEE_PERIOD]);
   await ssvNetwork.deployed();
-  console.log(`SSVToken: ${ssvToken.address}\nSSVRegistry: ${ssvRegistry.address}\nSSVNetwork: ${ssvNetwork.address}\n`);
+  console.log(`SSVRegistry: ${ssvRegistry.address}\nSSVNetwork: ${ssvNetwork.address}\n`);
 }
 
 main()

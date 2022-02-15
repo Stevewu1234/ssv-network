@@ -14,6 +14,7 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
         uint256 score;
         bool active;
         uint256 index;
+        string metadataUri;
     }
 
     struct Validator {
@@ -69,13 +70,14 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
         string calldata name,
         address ownerAddress,
         bytes calldata publicKey,
-        uint256 fee
+        uint256 fee,
+        string calldata metadataUri
     ) external onlyOwner override {
         require(
             _operators[publicKey].ownerAddress == address(0),
             "operator with same public key already exists"
         );
-        _operators[publicKey] = Operator(name, ownerAddress, publicKey, 0, false, _operatorsByOwnerAddress[ownerAddress].length);
+        _operators[publicKey] = Operator(name, ownerAddress, publicKey, 0, false, _operatorsByOwnerAddress[ownerAddress].length, metadataUri);
         _operatorsByOwnerAddress[ownerAddress].push(publicKey);
         _updateOperatorFeeUnsafe(publicKey, fee);
         _activateOperatorUnsafe(publicKey);
@@ -130,6 +132,13 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
         operator.score = score;
 
         emit OperatorScoreUpdated(operator.ownerAddress, publicKey, block.number, score);
+    }
+
+    function updateOperatorMetadataUri(bytes calldata publicKey, string calldata uri) external onlyOwner override {
+        Operator storage operator = _operators[publicKey];
+        operator.metadataUri = uri;
+
+        emit OperatorMetadataUpdated(operator.ownerAddress, publicKey, block.number, uri);
     }
 
     /**

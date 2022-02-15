@@ -44,6 +44,16 @@ contract SSVNetwork is Initializable, OwnableUpgradeable, ISSVNetwork {
         uint256 approvalEndTime;
     }
 
+    struct Operator {
+        string name;
+        address ownerAddress;
+        bytes publicKey;
+        uint256 score;
+        bool active;
+        uint256 index;
+        string metadataUrl;
+    }
+
     ISSVRegistry private _ssvRegistryContract;
     IERC20 private _token;
     uint256 private _minimumBlocksBeforeLiquidation;
@@ -139,13 +149,15 @@ contract SSVNetwork is Initializable, OwnableUpgradeable, ISSVNetwork {
     function registerOperator(
         string calldata name,
         bytes calldata publicKey,
-        uint256 fee
+        uint256 fee,
+        string calldata metadataUri
     ) ensureMinimalOperatorFee(fee) external override {
         _ssvRegistryContract.registerOperator(
             name,
             msg.sender,
             publicKey,
-            fee
+            fee,
+            metadataUri
         );
 
         _operatorDatas[publicKey] = OperatorData(block.number, 0, 0, 0, block.number, block.timestamp);
@@ -215,6 +227,13 @@ contract SSVNetwork is Initializable, OwnableUpgradeable, ISSVNetwork {
         _ssvRegistryContract.updateOperatorScore(publicKey, score);
 
         emit OperatorScoreUpdated(msg.sender, publicKey, block.number, score);
+    }
+
+
+    function updateOperatorMetadataUri(bytes calldata publicKey, string calldata uri) external onlyOwner override {
+        _ssvRegistryContract.updateOperatorMetadataUri(publicKey, uri);
+
+        emit OperatorMetadataUpdated(msg.sender, publicKey, block.number, uri);
     }
 
     /**
