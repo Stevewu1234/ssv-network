@@ -33,12 +33,13 @@ async function main() {
     fromBlock: 0,
     toBlock: latestBlock
   };
+  /*
   console.log(`fetching operators...`, filters);
   const operatorEvents = await oldContract.getPastEvents('OperatorAdded', filters);
   console.log("total operatorEvents", operatorEvents.length);
   let total = 0;
   let params = [[],[],[],[]];
-  for (let index = 0; index < 3; index++) {
+  for (let index = 3; index < operatorEvents.length; index++) {
     const { returnValues } = operatorEvents[index];
     if (total === 3) {
       const tx = await ssvNetwork.batchRegisterOperator(
@@ -73,28 +74,23 @@ async function main() {
     }
   }
   return;
+  */
   console.log(`fetching validators...`, filters);
   const validatorEvents = await oldContract.getPastEvents('ValidatorAdded', filters);
   console.log("total validatorEvents", validatorEvents.length);
   for (let index = 0; index < validatorEvents.length; index++) {
     const { returnValues } = validatorEvents[index];
-    const oess = returnValues.oessList.reduce((res, value) => {
-      res.operatorPublicKey.push(value.operatorPublicKey);
-      res.sharedPublicKey.push(value.sharedPublicKey);
-      res.encryptedKey.push(value.encryptedKey);
-      return res;
-    }, { sharedPublicKey: [], operatorPublicKey: [], encryptedKey: [] });
     try {
       const tx = await ssvNetwork.batchRegisterValidator(
         returnValues.ownerAddress,
         returnValues.publicKey,
-        oess.operatorPublicKey,
-        oess.sharedPublicKey,
-        oess.encryptedKey,
+        returnValues.operatorPublicKeys,
+        returnValues.sharesPublicKeys,
+        returnValues.encryptedKeys,
         0
       );
       await tx.wait();
-      console.log(`${index}/${validatorEvents.length}`, '+', returnValues.ownerAddress, returnValues.publicKey, oess.operatorPublicKey, oess.sharedPublicKey, oess.encryptedKey);  
+      console.log(`${index}/${validatorEvents.length}`, '+', returnValues.ownerAddress, returnValues.publicKey, returnValues.operatorPublicKeys, returnValues.sharesPublicKeys, returnValues.encryptedKeys);  
     } catch (e) {
       console.log(`${index}/${validatorEvents.length}`, '------', returnValues.publicKey);
     }
