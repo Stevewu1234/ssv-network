@@ -230,7 +230,7 @@ contract SSVNetwork is Initializable, OwnableUpgradeable, ISSVNetwork {
     }
 
 
-    function updateOperatorMetadataUri(bytes calldata publicKey, string calldata uri) external onlyOwner override {
+    function updateOperatorMetadataUri(bytes calldata publicKey, string calldata uri) external onlyOperatorOwner(publicKey) override {
         _ssvRegistryContract.updateOperatorMetadataUri(publicKey, uri);
 
         emit OperatorMetadataUpdated(msg.sender, publicKey, block.number, uri);
