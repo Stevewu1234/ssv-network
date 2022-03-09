@@ -22,7 +22,6 @@ const client = new Client({
     node: process.env.ELASTICSEARCH_URI
 });
 
-
 function convertPublickey(rawValue) {
     const decoded = web3.eth.abi.decodeParameter('string', rawValue.replace('0x', ''));
     return crypto.createHash('sha256').update(decoded).digest('hex');
@@ -34,6 +33,7 @@ async function exportEventsData(dataType, fromBlock, latestBlock) {
         fromBlock: fromBlock ? fromBlock + 1 : 0,
         toBlock: latestBlock
     };
+    
     console.log(`fetching ${dataType}`, filters);
     const events = await contract.getPastEvents(eventName, filters);
     stringify(await getEventDetails(events, dataType), {
@@ -159,47 +159,65 @@ async function fetchData() {
             blockFromCache = +(await readFile(cacheFile, 'utf8'));
         }
         const latestBlock = await web3.eth.getBlockNumber();
+        console.log(latestBlock);
         await exportEventsData('operators', blockFromCache, latestBlock);
-        await exportEventsData('validators', blockFromCache, latestBlock);
-        fs.writeFile(cacheFile, `${latestBlock}`, () => {
-        });
+        await exportEventsData('validators', 0, 6219148);
+        await exportEventsData('validators', 6253705, 6265222);
+        fs.writeFile(cacheFile, `${latestBlock}`, () => {});
     });
 }
 
 async function createEligibleReport(fromEpoch, toEpoch) {
+    console.log(fromEpoch, toEpoch)
     const ssvHoldersAlloc = 6400;
     const allOperatorAlloc = 2240;
-    const allValidatorAlloc = 1920;
-    const verifiedOperatorAlloc = 2240;
-    const validatorCoefficient = 50;
     const contractValidators = {};
+    const allValidatorAlloc = 1920;
+    const validatorCoefficient = 50;
     const operatorByOwnerAddress = {};
+    const verifiedOperatorAlloc = 2240;
     const validatorByOwnerAddress = {};
 
     const validatorsFile = `${__dirname}/validators.csv`;
+    const botWhiteListFile = `${__dirname}/validators_whitelist.csv`;
     await stat(validatorsFile);
-
+    await stat(botWhiteListFile);
+    
+    const botWhitelist = fs.createReadStream(botWhiteListFile).pipe(parse({columns: true}));
     const validatorsParser = fs.createReadStream(validatorsFile).pipe(parse({columns: true}));
-
+    for await (const record of botWhitelist) {
+        contractValidators[record.public_key] = record.wallet_address;
+    }
+    
     for await (const record of validatorsParser) {
         contractValidators[record.publicKey] = record.ownerAddress;
     }
-
-    const {operators, validators} = await fetchOperatorsValidators(fromEpoch, toEpoch);
-
+    
+    const {operators, validators} = await fetchOperatorsValidators(fromEpoch, toEpoch, contractValidators);
+    fs.writeFile('guy-test.json', JSON.stringify({operators, validators}), 'utf8', console.log);
+    
     console.log(`Division of validators to ownerAddress`)
     for (const publicKey of Object.keys(validators)) {
         const validator = validators[publicKey];
         let validatorOwnerAddress = contractValidators[publicKey];
         if (validatorOwnerAddress) validatorOwnerAddress = validatorOwnerAddress.toLowerCase();
         if (validator.performance >= process.env.MINIMUM_ELIGIBLE_SCORE) {
-            validator.operators.forEach(operator => {
-                if (operators[operator.address]) operators[operator.address].validatorsManaged += 1
-            })
-            if (validatorByOwnerAddress[validatorOwnerAddress]) {
-                validatorByOwnerAddress[validatorOwnerAddress].push(validator)
-            } else {
-                validatorByOwnerAddress[validatorOwnerAddress] = [validator]
+            try {
+                validator.operators.forEach(operator => {
+                    if (operators[operator.address]) operators[operator.address].validatorsManaged += 1
+                })
+                if (validatorByOwnerAddress[validatorOwnerAddress]) {
+                    validatorByOwnerAddress[validatorOwnerAddress].push(validator)
+                } else {
+                    validatorByOwnerAddress[validatorOwnerAddress] = [validator]
+                }
+            } catch (e) {
+                console.log('<<<<<<<<<<<<<<<<<<<<<<error>>>>>>>>>>>>>>>>>>>>>>');
+                console.log(e.message)
+                console.log(publicKey)
+                console.log(validator)
+                console.log(validatorOwnerAddress)
+                console.log('<<<<<<<<<<<<<<<<<<<<<<error>>>>>>>>>>>>>>>>>>>>>>');
             }
         }
     }
@@ -454,7 +472,6 @@ async function createEligibleReport(fromEpoch, toEpoch) {
 function writeToFile(data, fileName) {
     stringify(data, (err, output) => {
         console.log('error: ' + err)
-        console.log(output)
         fs.writeFile(`${__dirname}/${fileName}.csv`, output, () => {
             console.log(`file: ${__dirname}/${fileName}.csv exported`)
         });
@@ -545,7 +562,7 @@ const argsDefinitions = [
     {name: 'epochs', type: Number, multiple: true},
 ];
 
-const {command, epochs, env} = commandLineArgs(argsDefinitions);
+const {command, epochs} = commandLineArgs(argsDefinitions);
 
 if (command === 'fetch') {
     fetchData();
