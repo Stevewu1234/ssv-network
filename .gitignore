@@ -7,6 +7,7 @@ cache
 coverage
 coverage.json
 artifacts
+dist
 .openzeppelin/unknown-*
 subgraph/build
 .idea
