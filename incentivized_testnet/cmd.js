@@ -161,8 +161,8 @@ async function fetchData() {
         const latestBlock = await web3.eth.getBlockNumber();
         console.log(latestBlock);
         await exportEventsData('operators', blockFromCache, latestBlock);
-        await exportEventsData('validators', 0, 6219148);
-        await exportEventsData('validators', 6253705, 6265222);
+        // await exportEventsData('validators', 0, 6219148);
+        // await exportEventsData('validators', 6253705, 6265222);
         fs.writeFile(cacheFile, `${latestBlock}`, () => {});
     });
 }
@@ -185,6 +185,7 @@ async function createEligibleReport(fromEpoch, toEpoch) {
     
     const botWhitelist = fs.createReadStream(botWhiteListFile).pipe(parse({columns: true}));
     const validatorsParser = fs.createReadStream(validatorsFile).pipe(parse({columns: true}));
+
     for await (const record of botWhitelist) {
         contractValidators[record.public_key] = record.wallet_address;
     }
@@ -192,10 +193,9 @@ async function createEligibleReport(fromEpoch, toEpoch) {
     for await (const record of validatorsParser) {
         contractValidators[record.publicKey] = record.ownerAddress;
     }
-    
+
     const {operators, validators} = await fetchOperatorsValidators(fromEpoch, toEpoch, contractValidators);
-    fs.writeFile('guy-test.json', JSON.stringify({operators, validators}), 'utf8', console.log);
-    
+
     console.log(`Division of validators to ownerAddress`)
     for (const publicKey of Object.keys(validators)) {
         const validator = validators[publicKey];
