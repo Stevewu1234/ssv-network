@@ -161,6 +161,7 @@ async function fetchData() {
         const latestBlock = await web3.eth.getBlockNumber();
         console.log(latestBlock);
         await exportEventsData('operators', blockFromCache, latestBlock);
+        
         // await exportEventsData('validators', 0, 6219148);
         // await exportEventsData('validators', 6253705, 6265222);
         fs.writeFile(cacheFile, `${latestBlock}`, () => {});
