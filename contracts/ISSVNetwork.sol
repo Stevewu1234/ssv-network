@@ -182,6 +182,14 @@ interface ISSVNetwork {
     ) external returns (uint256);
 
     /**
+     * @dev Returns operator's address by operator ID
+     * @param operatorId.
+     */
+    function getOperatorAddress(
+        uint256 calldata operatorId
+    ) external returns (address);
+
+    /**
      * @dev Removes an operator.
      * @param operatorId Operator's id.
      */
@@ -223,14 +231,25 @@ interface ISSVNetwork {
      * @param operatorIndices Operator public keys.
      * @param sharesPublicKeys Shares public keys.
      * @param encryptedKeys Encrypted private keys.
+     * @param active sets validator active true/ false
      */
     function registerValidator(
         bytes calldata publicKey,
         uint256[] calldata operatorIndices,
         bytes[] calldata sharesPublicKeys,
         bytes[] calldata encryptedKeys,
-        uint256 tokenAmount
+        uint256 tokenAmount,
+        bool active
     ) external;
+
+    /**
+    * @dev Change validator activation status.
+    * @param active sets validator active true/ false
+    */
+    function changeValidatorActivation(
+        bool active
+    ) external;
+
 
     /**
      * @dev Updates a validator.

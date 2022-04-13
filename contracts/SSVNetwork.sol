@@ -232,6 +232,16 @@ contract SSVNetwork is Initializable, OwnableUpgradeable, ISSVNetwork {
         _registerValidatorUnsafe(msg.sender, publicKey, operatorIds, sharesPublicKeys, encryptedKeys, tokenAmount);
     }
 
+    function registerValidatorTwo(
+        bytes calldata publicKey,
+        uint256[] calldata operatorIds,
+        bytes[] calldata sharesPublicKeys,
+        bytes[] calldata encryptedKeys,
+        uint256 tokenAmount
+    ) external {
+
+    }
+
     /**
      * @dev See {ISSVNetwork-updateValidator}.
      */
