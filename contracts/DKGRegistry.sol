@@ -24,6 +24,9 @@ contract DKGRegistry is Initializable, OwnableUpgradeable {
     uint256 availableValidatorsCnt;
     uint256 availableValidatorsIdx;
 
+    /**
+        Registers a new available DKG validator
+    */
     function addValidatorData(
         bytes calldata publicKey,
         uint256[] calldata operatorIds,
@@ -60,7 +63,11 @@ contract DKGRegistry is Initializable, OwnableUpgradeable {
         emit DKGValidatorAdded(publicKey);
     }
 
+    /**
+       Returns the next available validator and marks it as used
+   */
     function getAvailableValidator() external returns (bytes publicKey, bytes with_cred, bytes deposit_sig,  bytes deposit_data_root) {
+        require(availableValidatorsIdx <= availableValidatorsCnt, "no available validators");
         val = availableValidators[availableValidatorsIdx];
         // TODO - do we need to check something? someone else can use this validator somehow?
         // TODO - take fee?
