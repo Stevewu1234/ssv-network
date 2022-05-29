@@ -138,6 +138,15 @@ interface ISSVRegistry {
     function deactivateOperator(uint256 operatorId) external;
 
     /**
+     * @dev Returns an operator's admin address by operator ID.
+     * @param publicKey Validator public key.
+     * @param operatorId Operator id.
+     */
+    function operatorAddressByID(
+        uint256 calldata operatorId
+    ) external returns (address);
+
+    /**
      * @dev Updates an operator fee.
      * @param operatorId Operator id.
      * @param fee New operator fee.
@@ -164,13 +173,15 @@ interface ISSVRegistry {
      * @param operatorIds Operator ids.
      * @param sharesPublicKeys Shares public keys.
      * @param encryptedKeys Encrypted private keys.
+     * @param status marks validator as active or not.
      */
     function registerValidator(
         address ownerAddress,
         bytes calldata publicKey,
         uint256[] calldata operatorIds,
         bytes[] calldata sharesPublicKeys,
-        bytes[] calldata encryptedKeys
+        bytes[] calldata encryptedKeys,
+        bool status
     ) external;
 
     /**
