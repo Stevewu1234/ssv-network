@@ -185,6 +185,14 @@ interface ISSVRegistry {
     ) external;
 
     /**
+     * @dev Sets validator as active or non-active
+     * @param status marks validator as active or not.
+     */
+    function setValidatorStatus(
+        bool status
+    ) external;
+
+    /**
      * @dev Updates a validator.
      * @param publicKey Validator public key.
      * @param operatorIds Operator ids.

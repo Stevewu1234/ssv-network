@@ -5,14 +5,14 @@ pragma solidity ^0.8.2;
 import "./ISSVRegistry.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-contract IDKG {
+contract DKG {
     using ECDSA for bytes32;
 
     mapping(bytes => bytes) depositSignature;
     ISSVRegistry ssvRegistry;
 
     /**
-     * @dev A callback for a dkg run
+     * @dev Validates and registers an DKG validator
      * @param operatorIds Operators SSV ID
      * @param signatures validation signature which result from DKG to validate the operator actually generated them
      * @param encryptedShares Operator shares for the validator
@@ -67,7 +67,7 @@ contract IDKG {
         depositSignature[validatorPubKey] = depositSignature;
     }
 
-    function depositDataForValidator(bytes validatorPubKey) external returns (bytes) {
+    function depositSignatureForValidator(bytes validatorPubKey) external returns (bytes) {
         return depositSignature[validatorPubKey];
     }
 }
