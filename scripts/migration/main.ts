@@ -38,19 +38,26 @@ async function main() {
   const operatorEvents = await oldContract.getPastEvents('OperatorAdded', filters);
   console.log("total operatorEvents", operatorEvents.length);
 
+  let newOperatorEvents = await newContract.getPastEvents('OperatorAdded', filters);
+  console.log("total new operatorEvents", newOperatorEvents.length);
+
   for (let index = 0; index < operatorEvents.length; index++) {
-    const { returnValues } = operatorEvents[index];
-    console.log('+', returnValues.name, returnValues.ownerAddress, returnValues.ownerAddress, returnValues.publicKey);
-    const tx = await ssvNetwork.batchRegisterOperator(
-      returnValues.name,
-      returnValues.ownerAddress,
-      returnValues.publicKey,
-      0
-    );
-    await tx.wait();
+    const { returnValues: oldValues } = operatorEvents[index];
+    const found = newOperatorEvents.find((n: any) => n.returnValues.publicKey === oldValues.publicKey && n.returnValues.ownerAddress === oldValues.ownerAddress);
+    console.log(index, !!found);
+    if (!!!found) {
+      const tx = await ssvNetwork.migrateRegisterOperator(
+        found.name,
+        found.ownerAddress,
+        found.publicKey,
+        0
+      );
+      await tx.wait();
+    }
   }
-  /*
-  const newOperatorEvents = await newContract.getPastEvents('OperatorAdded', filters);
+
+  console.log('resync new operators...');
+  newOperatorEvents = await newContract.getPastEvents('OperatorAdded', filters);
   console.log("total new operatorEvents", newOperatorEvents.length);
   const operatorIds: any = {};
   for (let index = 0; index < newOperatorEvents.length; index++) {
@@ -59,28 +66,33 @@ async function main() {
   }
 
   console.log(`fetching validators...`, filters);
-  const validatorEvents = await oldContract.getPastEvents('ValidatorAdded', filters);
-  console.log("total validatorEvents", validatorEvents.length);
-  for (let index = 0; index < validatorEvents.length; index++) {
-    const { returnValues } = validatorEvents[index];
-    const operatorPubKeys = returnValues.operatorPublicKeys.map((key: any) => operatorIds[key]);
-    try {
-      const tx = await ssvNetwork.batchRegisterValidator(
-        returnValues.ownerAddress,
-        returnValues.publicKey,
-        operatorPubKeys,
-        returnValues.sharesPublicKeys,
-        returnValues.encryptedKeys,
-        0
-      );
-      await tx.wait();
-      console.log(`${index}/${validatorEvents.length}`, '+', returnValues.ownerAddress, returnValues.publicKey, operatorPubKeys);  
-    } catch (e) {
-      console.log(`${index}/${validatorEvents.length}`, '------', returnValues.publicKey);
+  const validatorsEvents = await oldContract.getPastEvents('ValidatorAdded', filters);
+  const newValidatorsEvents = await newContract.getPastEvents('ValidatorAdded', filters);
+  console.log("total old validatorEvents", validatorsEvents.length);
+  console.log("total new validatorEvents", newValidatorsEvents.length);
+
+  for (let index = 0; index < validatorsEvents.length; index++) {
+    const { returnValues: oldValues } = validatorsEvents[index];
+    const found = newValidatorsEvents.find((n: any) => n.returnValues.publicKey === oldValues.publicKey && n.returnValues.ownerAddress === oldValues.ownerAddress);
+    console.log(index, !!found);
+    if (!!!found) {
+      const operatorIds = oldValues.operatorPublicKeys.map((key: any) => operatorIds[key]);
+      try {
+        const tx = await ssvNetwork.migrateRegisterValidator(
+          oldValues.ownerAddress,
+          oldValues.publicKey,
+          operatorIds,
+          oldValues.sharesPublicKeys,
+          oldValues.encryptedKeys,
+          0
+        );
+        await tx.wait();
+        console.log(`${index}/${validatorsEvents.length}`, '+', oldValues.ownerAddress, oldValues.publicKey, operatorIds);  
+      } catch (e) {
+        console.log(`${index}/${validatorsEvents.length}`, '------', oldValues.publicKey);
+      }  
     }
   }
-  */
-
 }
 
 main()
