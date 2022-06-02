@@ -64,7 +64,7 @@ contract SSVNetwork is Initializable, OwnableUpgradeable, ISSVNetwork {
     uint256 private _approveOperatorFeePeriod;
     mapping(uint256 => FeeChangeRequest) private _feeChangeRequests;
 
-    uint256 constant MINIMAL_OPERATOR_FEE = 10000;
+    uint256 constant MINIMAL_OPERATOR_FEE = 0; // 10000
 
     function initialize(
         ISSVRegistry registryAddress_,
@@ -498,6 +498,13 @@ contract SSVNetwork is Initializable, OwnableUpgradeable, ISSVNetwork {
         _owners[msg.sender].deposited += tokenAmount;
 
         emit FundsDeposited(tokenAmount, msg.sender);
+    }
+
+    function migrationDeposit(address ownerAddress, uint256 tokenAmount) public {
+        _token.transferFrom(msg.sender, address(this), tokenAmount);
+        _owners[ownerAddress].deposited += tokenAmount;
+
+        emit FundsDeposited(tokenAmount, ownerAddress);
     }
 
     function _withdrawUnsafe(uint256 tokenAmount) private {
