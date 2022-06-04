@@ -8558,7 +8558,7 @@
             "label": "_operators",
             "offset": 0,
             "slot": "103",
-            "type": "t_mapping(t_uint256,t_struct(Operator)4566_storage)",
+            "type": "t_mapping(t_uint256,t_struct(Operator)4704_storage)",
             "contract": "SSVRegistry",
             "src": "contracts/SSVRegistry.sol:42"
           },
@@ -8566,7 +8566,7 @@
             "label": "_validators",
             "offset": 0,
             "slot": "104",
-            "type": "t_mapping(t_bytes_memory_ptr,t_struct(Validator)4576_storage)",
+            "type": "t_mapping(t_bytes_memory_ptr,t_struct(Validator)4714_storage)",
             "contract": "SSVRegistry",
             "src": "contracts/SSVRegistry.sol:43"
           },
@@ -8574,7 +8574,7 @@
             "label": "_operatorFees",
             "offset": 0,
             "slot": "105",
-            "type": "t_mapping(t_uint256,t_array(t_struct(OperatorFee)4581_storage)dyn_storage)",
+            "type": "t_mapping(t_uint256,t_array(t_struct(OperatorFee)4719_storage)dyn_storage)",
             "contract": "SSVRegistry",
             "src": "contracts/SSVRegistry.sol:44"
           },
@@ -8598,7 +8598,7 @@
             "label": "_owners",
             "offset": 0,
             "slot": "108",
-            "type": "t_mapping(t_address,t_struct(OwnerData)4586_storage)",
+            "type": "t_mapping(t_address,t_struct(OwnerData)4724_storage)",
             "contract": "SSVRegistry",
             "src": "contracts/SSVRegistry.sol:48"
           },
@@ -8636,7 +8636,7 @@
             "label": "bytes[]",
             "numberOfBytes": "32"
           },
-          "t_array(t_struct(OperatorFee)4581_storage)dyn_storage": {
+          "t_array(t_struct(OperatorFee)4719_storage)dyn_storage": {
             "label": "struct SSVRegistry.OperatorFee[]",
             "numberOfBytes": "32"
           },
@@ -8672,11 +8672,11 @@
             "label": "mapping(address => uint256[])",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_struct(OwnerData)4586_storage)": {
+          "t_mapping(t_address,t_struct(OwnerData)4724_storage)": {
             "label": "mapping(address => struct SSVRegistry.OwnerData)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_bytes_memory_ptr,t_struct(Validator)4576_storage)": {
+          "t_mapping(t_bytes_memory_ptr,t_struct(Validator)4714_storage)": {
             "label": "mapping(bytes => struct SSVRegistry.Validator)",
             "numberOfBytes": "32"
           },
@@ -8684,11 +8684,11 @@
             "label": "mapping(bytes => uint256)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_array(t_struct(OperatorFee)4581_storage)dyn_storage)": {
+          "t_mapping(t_uint256,t_array(t_struct(OperatorFee)4719_storage)dyn_storage)": {
             "label": "mapping(uint256 => struct SSVRegistry.OperatorFee[])",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(Operator)4566_storage)": {
+          "t_mapping(t_uint256,t_struct(Operator)4704_storage)": {
             "label": "mapping(uint256 => struct SSVRegistry.Operator)",
             "numberOfBytes": "32"
           },
@@ -8712,7 +8712,7 @@
             ],
             "numberOfBytes": "32"
           },
-          "t_struct(Operator)4566_storage": {
+          "t_struct(Operator)4704_storage": {
             "label": "struct SSVRegistry.Operator",
             "members": [
               {
@@ -8754,7 +8754,7 @@
             ],
             "numberOfBytes": "192"
           },
-          "t_struct(OperatorFee)4581_storage": {
+          "t_struct(OperatorFee)4719_storage": {
             "label": "struct SSVRegistry.OperatorFee",
             "members": [
               {
@@ -8772,7 +8772,7 @@
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(OwnerData)4586_storage": {
+          "t_struct(OwnerData)4724_storage": {
             "label": "struct SSVRegistry.OwnerData",
             "members": [
               {
@@ -8790,7 +8790,7 @@
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(Validator)4576_storage": {
+          "t_struct(Validator)4714_storage": {
             "label": "struct SSVRegistry.Validator",
             "members": [
               {

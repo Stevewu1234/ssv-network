@@ -123,7 +123,12 @@ async function main() {
         await writeTx(process.env.SSVTOKEN_ADDRESS, process.env.GOERLI_OWNER_PRIVATE_KEY, 'approve', [process.env.MIGRATION_NEW_CONTRACT_ADDRESS, tokens]);
         const txDeposit = await ssvNetwork.migrationDeposit(oldValues.ownerAddress, tokens);
         await txDeposit.wait();
-        console.log('> register');
+        console.log('> register', oldValues.ownerAddress,
+        oldValues.publicKey,
+        usedOperatorIds,
+        oldValues.oessList.map((rec:any) => rec['sharedPublicKey']),
+        oldValues.oessList.map((rec:any) => rec['encryptedKey']),
+        0);
         const tx = await ssvNetwork.migrateRegisterValidator(
           oldValues.ownerAddress,
           oldValues.publicKey,
