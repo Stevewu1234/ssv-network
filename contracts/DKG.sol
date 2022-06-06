@@ -36,19 +36,18 @@ contract DKG {
         for (uint8 index = 0; index < setSize; ++index) {
             res = keccak256(
                 abi.encode(
-                    signatures[index],
-                    address,
                     encryptedShares[index],
                     setSize,
+                    validatorPubKey,
                     withdrawalCredentials,
-                    validatorPubKey
+                    depositSignature
                 )
             )
             .toEthSignedMessageHash()
-            .recover(signatures[index]) == ssvRegistry.operatorAddressByID(operatorIds[index]);
+            .recover(signatures[index]);
 
             require(
-               res,
+               res == ssvRegistry.operatorAddressByID(operatorIds[index],
                 "signature invalid"
             );
         }
