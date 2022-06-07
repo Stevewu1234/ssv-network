@@ -58,12 +58,19 @@ describe('SSV Network Liquidation', function() {
     await ssvNetwork.connect(account2).registerOperator('testOperator 1', operatorsPub[1], 20000);
     await ssvNetwork.connect(account3).registerOperator('testOperator 2', operatorsPub[2], 30000);
     await ssvNetwork.connect(account3).registerOperator('testOperator 3', operatorsPub[3], 40000);
-    await ssvNetwork.connect(account3).registerOperator('testOperator 4', operatorsPub[4], 50000);
+    await ssvNetwork.connect(account3).registerOperator('testOperator 4', operatorsPub[4], 10000);
+    await ssvNetwork.connect(account3).registerOperator('testOperator 4', operatorsPub[5], 10000);
+    await ssvNetwork.connect(account3).registerOperator('testOperator 4', operatorsPub[6], 10000);
+    await ssvNetwork.connect(account3).registerOperator('testOperator 4', operatorsPub[7], 10000);
 
     // register validators
-    await ssvToken.connect(account1).approve(ssvNetwork.address, tokens);
+    await ssvToken.connect(account1).approve(ssvNetwork.address, tokens + '0000');
     await ssvToken.connect(account1).transfer(account2.address, tokens);
+    // await ssvRegistry.checkGas([1]);
     await ssvNetwork.connect(account1).registerValidator(validatorsPub[0], operatorsIds.slice(0, 4), operatorsPub.slice(0, 4), operatorsPub.slice(0, 4), tokens);
+    await ssvNetwork.connect(account1).registerValidator(validatorsPub[1], operatorsIds.slice(4, 8), operatorsPub.slice(4, 8), operatorsPub.slice(4, 8), tokens);
+    await ssvNetwork.connect(account1).registerValidator(validatorsPub[2], operatorsIds.slice(2, 6), operatorsPub.slice(2, 6), operatorsPub.slice(2, 6), tokens);
+    process.exit(0);
   });
 
   it('register liquidatable validator', async function() {

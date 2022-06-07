@@ -1,28 +1,31 @@
 // File: contracts/SSVRegistry.sol
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "./utils/VersionedContract.sol";
 import "./ISSVRegistry.sol";
+import "hardhat/console.sol";
 
-contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
+contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry, VersionedContract {
     using Counters for Counters.Counter;
 
     struct Operator {
         string name;
-        address ownerAddress;
         bytes publicKey;
-        uint256 score;
+        address ownerAddress;
+        uint16 score;
+        uint16 indexInOwner;
+        uint16 validatorCount;
         bool active;
-        uint indexInOwner;
     }
 
     struct Validator {
+        uint32[] operatorIds;
         address ownerAddress;
-        uint256[] operatorIds;
+        uint16 indexInOwner;
         bool active;
-        uint256 indexInOwner;
     }
 
     struct OperatorFee {
@@ -31,39 +34,40 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
     }
 
     struct OwnerData {
-        uint256 activeValidatorCount;
+        uint32 activeValidatorCount;
         bool validatorsDisabled;
+        bytes[] validators;
     }
 
-    uint256 private _activeValidatorCount;
 
     Counters.Counter private _lastOperatorId;
 
-    mapping(uint256 => Operator) private _operators;
+    mapping(uint32 => Operator) private _operators;
     mapping(bytes => Validator) private _validators;
-    mapping(uint256 => OperatorFee[]) private _operatorFees;
+    mapping(uint32 => OperatorFee[]) private _operatorFees;
 
-    mapping(address => uint256[]) private _operatorsByOwnerAddress;
-    mapping(address => bytes[]) private _validatorsByOwnerAddress;
+    mapping(address => uint32[]) private _operatorsByOwnerAddress;
+    // mapping(address => bytes[]) private _validatorsByOwnerAddress;
     mapping(address => OwnerData) private _owners;
 
-    mapping(uint256 => uint256) internal validatorsPerOperator;
-    uint256 public validatorsPerOperatorLimit;
-    mapping(bytes => uint256) private _operatorPublicKeyToId;
+    // mapping(uint32 => uint16) internal validatorsPerOperator;
+    uint16 public validatorsPerOperatorLimit;
+    uint32 private _activeValidatorCount;
+    mapping(bytes => uint32) private _operatorPublicKeyToId;
 
     /**
      * @dev See {ISSVRegistry-initialize}.
      */
-    function initialize(uint256 validatorsPerOperatorLimit_) external override initializer {
+    function initialize(uint16 validatorsPerOperatorLimit_) external override initializer {
         __SSVRegistry_init(validatorsPerOperatorLimit_);
     }
 
-    function __SSVRegistry_init(uint256 validatorsPerOperatorLimit_) internal initializer {
+    function __SSVRegistry_init(uint16 validatorsPerOperatorLimit_) internal onlyInitializing {
         __Ownable_init_unchained();
         __SSVRegistry_init_unchained(validatorsPerOperatorLimit_);
     }
 
-    function __SSVRegistry_init_unchained(uint256 validatorsPerOperatorLimit_) internal initializer {
+    function __SSVRegistry_init_unchained(uint16 validatorsPerOperatorLimit_) internal onlyInitializing {
         validatorsPerOperatorLimit = validatorsPerOperatorLimit_;
     }
 
@@ -75,15 +79,15 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
         address ownerAddress,
         bytes calldata publicKey,
         uint256 fee
-    ) external onlyOwner override returns (uint256 operatorId) {
+    ) external onlyOwner override returns (uint32 operatorId) {
         require(
             _operatorPublicKeyToId[publicKey] == 0,
             "operator with same public key already exists"
         );
 
         _lastOperatorId.increment();
-        operatorId = _lastOperatorId.current();
-        _operators[operatorId] = Operator(name, ownerAddress, publicKey, 0, false, _operatorsByOwnerAddress[ownerAddress].length);
+        operatorId = uint32(_lastOperatorId.current());
+        _operators[operatorId] = Operator({name: name, ownerAddress: ownerAddress, publicKey: publicKey, score: 0, active: false, indexInOwner: uint16(_operatorsByOwnerAddress[ownerAddress].length), validatorCount: 0});
         _operatorsByOwnerAddress[ownerAddress].push(operatorId);
         _operatorPublicKeyToId[publicKey] = operatorId;
         _updateOperatorFeeUnsafe(operatorId, fee);
@@ -96,9 +100,9 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
      * @dev See {ISSVRegistry-removeOperator}.
      */
     function removeOperator(
-        uint256 operatorId
+        uint32 operatorId
     ) external onlyOwner override {
-        require(validatorsPerOperator[operatorId] == 0, "operator has validators");
+        require(_operators[operatorId].validatorCount == 0, "operator has validators");
 
         Operator storage operator = _operators[operatorId];
         _operatorsByOwnerAddress[operator.ownerAddress][operator.indexInOwner] = _operatorsByOwnerAddress[operator.ownerAddress][_operatorsByOwnerAddress[operator.ownerAddress].length - 1];
@@ -107,7 +111,7 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
 
         emit OperatorRemoved(operatorId, operator.ownerAddress, operator.publicKey);
 
-        delete validatorsPerOperator[operatorId];
+        // delete _operators[operatorId].validatorCount;
         delete _operatorPublicKeyToId[operator.publicKey];
         delete _operators[operatorId];
     }
@@ -115,28 +119,28 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
     /**
      * @dev See {ISSVRegistry-activateOperator}.
      */
-    function activateOperator(uint256 operatorId) external onlyOwner override {
+    function activateOperator(uint32 operatorId) external onlyOwner override {
         _activateOperatorUnsafe(operatorId);
     }
 
     /**
      * @dev See {ISSVRegistry-deactivateOperator}.
      */
-    function deactivateOperator(uint256 operatorId) external onlyOwner override {
+    function deactivateOperator(uint32 operatorId) external onlyOwner override {
         _deactivateOperatorUnsafe(operatorId);
     }
 
     /**
      * @dev See {ISSVRegistry-updateOperatorFee}.
      */
-    function updateOperatorFee(uint256 operatorId, uint256 fee) external onlyOwner override {
+    function updateOperatorFee(uint32 operatorId, uint256 fee) external onlyOwner override {
         _updateOperatorFeeUnsafe(operatorId, fee);
     }
 
     /**
      * @dev See {ISSVRegistry-updateOperatorScore}.
      */
-    function updateOperatorScore(uint256 operatorId, uint256 score) external onlyOwner override {
+    function updateOperatorScore(uint32 operatorId, uint16 score) external onlyOwner override {
         Operator storage operator = _operators[operatorId];
         operator.score = score;
 
@@ -149,32 +153,58 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
     function registerValidator(
         address ownerAddress,
         bytes calldata publicKey,
-        uint256[] calldata operatorIds,
+        uint32[] calldata operatorIds,
         bytes[] calldata sharesPublicKeys,
         bytes[] calldata encryptedKeys
     ) external onlyOwner override {
+        uint256 left = gasleft();
         _validateValidatorParams(
             publicKey,
             operatorIds,
             sharesPublicKeys,
             encryptedKeys
         );
+
         require(
             _validators[publicKey].ownerAddress == address(0),
             "validator with same public key already exists"
         );
+        console.log("REG: validate params");
+        console.log(left - gasleft());
+        left = gasleft();
 
-        _validators[publicKey] = Validator(ownerAddress, operatorIds, true, _validatorsByOwnerAddress[ownerAddress].length);
-        _validatorsByOwnerAddress[ownerAddress].push(publicKey);
+        _validators[publicKey] = Validator({
+            operatorIds: operatorIds,
+            ownerAddress: ownerAddress,
+            indexInOwner: uint16(_owners[ownerAddress].validators.length),
+            active: true
+        });
+        console.log("REG: create validator record");
+        console.log(left - gasleft());
+        left = gasleft();
+        _owners[ownerAddress].validators.push(publicKey);
+        console.log("REG: add to validatorsByOwnerAddress");
+        console.log(left - gasleft());
+        left = gasleft();
 
-        for (uint256 index = 0; index < operatorIds.length; ++index) {
-            require(++validatorsPerOperator[operatorIds[index]] <= validatorsPerOperatorLimit, "exceed validator limit");
+        for (uint32 index = 0; index < operatorIds.length; ++index) {
+            require(++_operators[operatorIds[index]].validatorCount <= validatorsPerOperatorLimit, "exceed validator limit");
         }
 
+        console.log("REG: add to validatorsPerOperator and validate limit");
+        console.log(left - gasleft());
+        left = gasleft();
         ++_activeValidatorCount;
-        ++_owners[_validators[publicKey].ownerAddress].activeValidatorCount;
+        // ++_owners[_validators[publicKey].ownerAddress].activeValidatorCount;
 
+        console.log("REG: update counters");
+        console.log(left - gasleft());
+        left = gasleft();
         emit ValidatorAdded(ownerAddress, publicKey, operatorIds, sharesPublicKeys, encryptedKeys);
+
+        console.log("REG: and emit event");
+        console.log(left - gasleft());
+        left = gasleft();
     }
 
     /**
@@ -182,7 +212,7 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
      */
     function updateValidator(
         bytes calldata publicKey,
-        uint256[] calldata operatorIds,
+        uint32[] calldata operatorIds,
         bytes[] calldata sharesPublicKeys,
         bytes[] calldata encryptedKeys
     ) external onlyOwner override {
@@ -194,14 +224,14 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
         );
         Validator storage validator = _validators[publicKey];
 
-        for (uint256 index = 0; index < validator.operatorIds.length; ++index) {
-            --validatorsPerOperator[validator.operatorIds[index]];
+        for (uint32 index = 0; index < validator.operatorIds.length; ++index) {
+            --_operators[validator.operatorIds[index]].validatorCount;
         }
 
         validator.operatorIds = operatorIds;
 
-        for (uint256 index = 0; index < operatorIds.length; ++index) {
-            require(++validatorsPerOperator[operatorIds[index]] <= validatorsPerOperatorLimit, "exceed validator limit");
+        for (uint32 index = 0; index < operatorIds.length; ++index) {
+            require(++_operators[operatorIds[index]].validatorCount <= validatorsPerOperatorLimit, "exceed validator limit");
         }
 
         emit ValidatorUpdated(validator.ownerAddress, publicKey, operatorIds, sharesPublicKeys, encryptedKeys);
@@ -215,16 +245,18 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
     ) external onlyOwner override {
         Validator storage validator = _validators[publicKey];
 
-        for (uint256 index = 0; index < validator.operatorIds.length; ++index) {
-            --validatorsPerOperator[validator.operatorIds[index]];
+        for (uint32 index = 0; index < validator.operatorIds.length; ++index) {
+            --_operators[validator.operatorIds[index]].validatorCount;
         }
 
-        _validatorsByOwnerAddress[validator.ownerAddress][validator.indexInOwner] = _validatorsByOwnerAddress[validator.ownerAddress][_validatorsByOwnerAddress[validator.ownerAddress].length - 1];
-        _validators[_validatorsByOwnerAddress[validator.ownerAddress][validator.indexInOwner]].indexInOwner = validator.indexInOwner;
-        _validatorsByOwnerAddress[validator.ownerAddress].pop();
+        bytes[] storage ownerValidators = _owners[validator.ownerAddress].validators;
+
+        ownerValidators[validator.indexInOwner] = ownerValidators[ownerValidators.length - 1];
+        _validators[ownerValidators[validator.indexInOwner]].indexInOwner = validator.indexInOwner;
+        ownerValidators.pop();
 
         --_activeValidatorCount;
-        --_owners[validator.ownerAddress].activeValidatorCount;
+        // --_owners[validator.ownerAddress].activeValidatorCount;
 
         emit ValidatorRemoved(validator.ownerAddress, publicKey);
 
@@ -232,14 +264,14 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
     }
 
     function enableOwnerValidators(address ownerAddress) external onlyOwner override {
-        _activeValidatorCount += _owners[ownerAddress].activeValidatorCount;
+        // _activeValidatorCount += _owners[ownerAddress].activeValidatorCount;
         _owners[ownerAddress].validatorsDisabled = false;
 
         emit OwnerValidatorsEnabled(ownerAddress);
     }
 
     function disableOwnerValidators(address ownerAddress) external onlyOwner override {
-        _activeValidatorCount -= _owners[ownerAddress].activeValidatorCount;
+        // _activeValidatorCount -= _owners[ownerAddress].activeValidatorCount;
         _owners[ownerAddress].validatorsDisabled = true;
 
         emit OwnerValidatorsDisabled(ownerAddress);
@@ -252,7 +284,7 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
     /**
      * @dev See {ISSVRegistry-operators}.
      */
-    function operators(uint256 operatorId) external view override returns (string memory, address, bytes memory, uint256, bool) {
+    function operators(uint32 operatorId) external view override returns (string memory, address, bytes memory, uint256, bool) {
         Operator storage operator = _operators[operatorId];
         return (operator.name, operator.ownerAddress, operator.publicKey, operator.score, operator.active);
     }
@@ -260,14 +292,14 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
     /**
      * @dev See {ISSVRegistry-getOperatorsByOwnerAddress}.
      */
-    function getOperatorsByOwnerAddress(address ownerAddress) external view override returns (uint256[] memory) {
+    function getOperatorsByOwnerAddress(address ownerAddress) external view override returns (uint32[] memory) {
         return _operatorsByOwnerAddress[ownerAddress];
     }
 
     /**
      * @dev See {ISSVRegistry-getOperatorsByValidator}.
      */
-    function getOperatorsByValidator(bytes calldata validatorPublicKey) external view override returns (uint256[] memory operatorIds) {
+    function getOperatorsByValidator(bytes calldata validatorPublicKey) external view override returns (uint32[] memory operatorIds) {
         Validator storage validator = _validators[validatorPublicKey];
 
         return validator.operatorIds;
@@ -276,14 +308,14 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
     /**
      * @dev See {ISSVRegistry-getOperatorOwner}.
      */
-    function getOperatorOwner(uint256 operatorId) external override view returns (address) {
+    function getOperatorOwner(uint32 operatorId) external override view returns (address) {
         return _operators[operatorId].ownerAddress;
     }
 
     /**
      * @dev See {ISSVRegistry-getOperatorCurrentFee}.
      */
-    function getOperatorCurrentFee(uint256 operatorId) external view override returns (uint256) {
+    function getOperatorCurrentFee(uint32 operatorId) external view override returns (uint256) {
         require(_operatorFees[operatorId].length > 0, "operator not found");
         return _operatorFees[operatorId][_operatorFees[operatorId].length - 1].fee;
     }
@@ -291,7 +323,7 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
     /**
      * @dev See {ISSVRegistry-activeValidatorCount}.
      */
-    function activeValidatorCount() external view override returns (uint256) {
+    function activeValidatorCount() external view override returns (uint32) {
         return _activeValidatorCount;
     }
 
@@ -308,7 +340,7 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
      * @dev See {ISSVRegistry-getValidatorsByAddress}.
      */
     function getValidatorsByAddress(address ownerAddress) external view override returns (bytes[] memory) {
-        return _validatorsByOwnerAddress[ownerAddress];
+        return _owners[ownerAddress].validators;
     }
 
     /**
@@ -321,28 +353,28 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
     /**
      * @dev See {ISSVRegistry-setValidatorsPerOperatorLimit}.
      */
-    function setValidatorsPerOperatorLimit(uint256 _validatorsPerOperatorLimit) onlyOwner external override {
+    function setValidatorsPerOperatorLimit(uint16 _validatorsPerOperatorLimit) onlyOwner external override {
         validatorsPerOperatorLimit = _validatorsPerOperatorLimit;
     }
 
     /**
      * @dev See {ISSVRegistry-getValidatorsPerOperatorLimit}.
      */
-    function getValidatorsPerOperatorLimit() external view override returns (uint256) {
+    function getValidatorsPerOperatorLimit() external view override returns (uint16) {
         return validatorsPerOperatorLimit;
     }
 
     /**
      * @dev See {ISSVRegistry-validatorsPerOperatorCount}.
      */
-    function validatorsPerOperatorCount(uint256 operatorId) external override view returns (uint256) {
-        return validatorsPerOperator[operatorId];
+    function validatorsPerOperatorCount(uint32 operatorId) external override view returns (uint16) {
+        return _operators[operatorId].validatorCount;
     }
 
     /**
      * @dev See {ISSVRegistry-activateOperator}.
      */
-    function _activateOperatorUnsafe(uint256 operatorId) private {
+    function _activateOperatorUnsafe(uint32 operatorId) private {
         require(!_operators[operatorId].active, "already active");
         _operators[operatorId].active = true;
 
@@ -352,7 +384,7 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
     /**
      * @dev See {ISSVRegistry-deactivateOperator}.
      */
-    function _deactivateOperatorUnsafe(uint256 operatorId) private {
+    function _deactivateOperatorUnsafe(uint32 operatorId) private {
         require(_operators[operatorId].active, "already inactive");
         _operators[operatorId].active = false;
 
@@ -362,7 +394,7 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
     /**
      * @dev See {ISSVRegistry-updateOperatorFee}.
      */
-    function _updateOperatorFeeUnsafe(uint256 operatorId, uint256 fee) private {
+    function _updateOperatorFeeUnsafe(uint32 operatorId, uint256 fee) private {
         _operatorFees[operatorId].push(
             OperatorFee(block.number, fee)
         );
@@ -379,11 +411,11 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
      */
     function _validateValidatorParams(
         bytes calldata publicKey,
-        uint256[] calldata operatorIds,
+        uint32[] calldata operatorIds,
         bytes[] calldata sharesPublicKeys,
         bytes[] calldata encryptedKeys
     ) private pure {
-        require(publicKey.length == 48, "invalid public key length");
+        // require(publicKey.length == 48, "invalid public key length");
         require(
             operatorIds.length == sharesPublicKeys.length &&
             operatorIds.length == encryptedKeys.length &&
@@ -391,4 +423,10 @@ contract SSVRegistry is Initializable, OwnableUpgradeable, ISSVRegistry {
             "OESS data structure is not valid"
         );
     }
+
+    function version() external pure override returns (uint32) {
+        return 1;
+    }
+
+    uint256[50] ______gap;
 }

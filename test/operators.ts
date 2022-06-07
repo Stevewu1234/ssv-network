@@ -49,7 +49,7 @@ describe('Operators', function() {
 
   it('register operator', async function() {
     await expect(ssvNetwork.connect(account2).registerOperator('testOperator 0', operatorsPub[0], 1000000))
-      .to.emit(ssvNetwork, 'OperatorAdded')
+      .to.emit(ssvRegistry, 'OperatorAdded')
       .withArgs(operatorsIds[0], 'testOperator 0', account2.address, operatorsPub[0], 1000000);
   });
 
