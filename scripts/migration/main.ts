@@ -74,6 +74,22 @@ async function main() {
     fromBlock: 0,
     toBlock: latestBlock
   };
+
+  console.log(`fetching operators fee changes...`, filters);
+  const operatorFeeEvents = await oldContract.getPastEvents('OperatorFeeApproved', filters);
+  console.log("total operatorFeesEvents", operatorFeeEvents.length);
+
+  for (let index = 0; index < operatorFeeEvents.length; index++) {
+    const { returnValues: oldValues } = operatorFeeEvents[index];
+    console.log(index, oldValues.ownerAddress, oldValues.operatorId, oldValues.fee);
+    const tx = await ssvNetwork.migrationUpdateOperatorFee(
+      oldValues.ownerAddress,
+      oldValues.operatorId,
+      oldValues.fee
+    );
+    await tx.wait();
+  }
+  /*
   console.log(`fetching operators...`, filters);
   const operatorEvents = await oldContract.getPastEvents('OperatorAdded', filters);
   console.log("total operatorEvents", operatorEvents.length);
@@ -116,35 +132,30 @@ async function main() {
     const found = newValidatorsEvents.find((n: any) => n.returnValues.publicKey === oldValues.publicKey);
     console.log(index, !!found);
     if (!!!found) {
-      const usedOperatorIds = oldValues.oessList.map((rec: any) => +operatorIds[rec['operatorPublicKey']]);
       try {
         console.log('> deposit');
         const tokens = '150000000000000000000';
         await writeTx(process.env.SSVTOKEN_ADDRESS, process.env.GOERLI_OWNER_PRIVATE_KEY, 'approve', [process.env.MIGRATION_NEW_CONTRACT_ADDRESS, tokens]);
         const txDeposit = await ssvNetwork.migrationDeposit(oldValues.ownerAddress, tokens);
         await txDeposit.wait();
-        console.log('> register', oldValues.ownerAddress,
-        oldValues.publicKey,
-        usedOperatorIds,
-        oldValues.oessList.map((rec:any) => rec['sharedPublicKey']),
-        oldValues.oessList.map((rec:any) => rec['encryptedKey']),
-        0);
+        console.log('> register');
         const tx = await ssvNetwork.migrateRegisterValidator(
           oldValues.ownerAddress,
           oldValues.publicKey,
-          usedOperatorIds,
-          oldValues.oessList.map((rec:any) => rec['sharedPublicKey']),
-          oldValues.oessList.map((rec:any) => rec['encryptedKey']),
+          oldValues.operatorIds,
+          oldValues.sharesPublicKeys,
+          oldValues.encryptedKeys,
           0
         );
         await tx.wait();
-        console.log(`${index}/${validatorsEvents.length}`, '+', oldValues.ownerAddress, oldValues.publicKey, operatorIds);  
+        console.log(`${index}/${validatorsEvents.length}`, '+', oldValues.ownerAddress, oldValues.publicKey, oldValues.operatorIds);  
       } catch (e) {
         console.log(e);
         console.log(`${index}/${validatorsEvents.length}`, '------', oldValues.publicKey);
       }  
     }
   }
+  */
 }
 
 main()

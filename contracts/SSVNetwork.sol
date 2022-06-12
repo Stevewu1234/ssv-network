@@ -620,6 +620,11 @@ contract SSVNetwork is Initializable, OwnableUpgradeable, ISSVNetwork {
         _ssvRegistryContract.updateOperatorFee(operatorId, fee);
     }
 
+    function migrationUpdateOperatorFee(address ownerAddress, uint256 operatorId, uint256 fee) public {
+        _updateOperatorFeeUnsafe(operatorId, _operatorDatas[operatorId], fee);
+        emit OperatorFeeApproved(ownerAddress, operatorId, block.number, fee);
+    }
+
     /**
      * @dev Updates the relation between operator and owner
      * @param ownerAddress Owner address.
