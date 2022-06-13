@@ -52,7 +52,8 @@ contract DKGRegistration {
         bytes[]  calldata signatures,
         bytes[] calldata encryptedShares,
         bytes[] calldata sharesPublicKeys,
-        uint8 calldata setSize,
+        uint16 calldata setSize,
+        uint16 calldata threshold,
         bytes calldata withdrawalCredentials,
         bytes calldata depositSignature,
         bytes calldata validatorPubKey
@@ -65,6 +66,7 @@ contract DKGRegistration {
             encryptedShares,
             sharesPublicKeys,
             setSize,
+            threshold,
             withdrawalCredentials,
             depositSignature,
             validatorPubKey

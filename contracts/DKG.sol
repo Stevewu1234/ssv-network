@@ -18,6 +18,7 @@ contract DKG {
      * @param encryptedShares Operator shares for the validator
      * @param sharesPublicKeys the PK for the encrypted shares
      * @param setSize the number of operators participating in the DKG
+     * @param threshold the number of min operators threshold for DKG
      * @param withdrawalCredentials the provided credentials as input to the DKG
      * @param depositSignature a valid signature to be used to deposit the eth2 validator
      * @param validatorPubKey the validator's pub key
@@ -27,7 +28,8 @@ contract DKG {
         bytes[]  calldata signatures,
         bytes[] calldata encryptedShares,
         bytes[] calldata sharesPublicKeys,
-        uint8 calldata setSize,
+        uint16 calldata setSize,
+        uint16 calldata threshold,
         bytes calldata withdrawalCredentials,
         bytes calldata depositSignature,
         bytes calldata validatorPubKey
@@ -38,6 +40,7 @@ contract DKG {
                 abi.encode(
                     encryptedShares[index],
                     setSize,
+                    threshold,
                     validatorPubKey,
                     withdrawalCredentials,
                     depositSignature
